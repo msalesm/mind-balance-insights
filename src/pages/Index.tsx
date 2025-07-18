@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dashboard } from '@/components/Dashboard';
 import { VoiceAnalyzer } from '@/components/VoiceAnalyzer';
+import HealthDataSync from '@/components/HealthDataSync';
 import { 
   Brain, 
   Mic, 
@@ -150,7 +151,7 @@ const Index = () => {
       {/* Main Application */}
       <section className="py-20 container mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 max-w-md mx-auto mb-12 bg-secondary/50">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-12 bg-secondary/50">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Dashboard
@@ -158,6 +159,10 @@ const Index = () => {
             <TabsTrigger value="voice" className="flex items-center gap-2">
               <Mic className="h-4 w-4" />
               Análise de Voz
+            </TabsTrigger>
+            <TabsTrigger value="health" className="flex items-center gap-2">
+              <Heart className="h-4 w-4" />
+              Saúde
             </TabsTrigger>
           </TabsList>
           
@@ -167,6 +172,10 @@ const Index = () => {
           
           <TabsContent value="voice" className="mt-8">
             <VoiceAnalyzer />
+          </TabsContent>
+          
+          <TabsContent value="health" className="mt-8">
+            <HealthDataSync />
           </TabsContent>
         </Tabs>
       </section>

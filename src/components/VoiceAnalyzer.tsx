@@ -5,6 +5,7 @@ import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Mic, MicOff, Activity, Brain, Heart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 interface VoiceMetrics {
   pitch: number;
@@ -19,6 +20,9 @@ interface AnalysisResult {
   emotionalTone: 'positive' | 'neutral' | 'negative';
   confidence: number;
   recommendations: string[];
+  transcription?: string;
+  emotional_tone?: any;
+  stress_indicators?: string[];
 }
 
 export const VoiceAnalyzer = () => {
@@ -27,12 +31,24 @@ export const VoiceAnalyzer = () => {
   const [voiceMetrics, setVoiceMetrics] = useState<VoiceMetrics | null>(null);
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
   const [audioLevel, setAudioLevel] = useState(0);
+  const [user, setUser] = useState<any>(null);
   
   const audioContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
   const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
   const animationRef = useRef<number>();
   const { toast } = useToast();
+
+  // Check authentication
+  useEffect(() => {
+    const getUser = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      setUser(user);
+    };
+    getUser();
+  }, []);
 
   const initializeAudio = async () => {
     try {
@@ -155,8 +171,34 @@ export const VoiceAnalyzer = () => {
   };
 
   const startRecording = async () => {
+    if (!user) {
+      toast({
+        title: "Autenticação Necessária",
+        description: "Faça login para usar a análise de voz",
+        variant: "destructive"
+      });
+      return;
+    }
+
     const initialized = await initializeAudio();
     if (!initialized) return;
+
+    // Setup MediaRecorder for audio capture
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mediaRecorder = new MediaRecorder(stream, {
+      mimeType: 'audio/webm;codecs=opus'
+    });
+    
+    audioChunksRef.current = [];
+    
+    mediaRecorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        audioChunksRef.current.push(event.data);
+      }
+    };
+    
+    mediaRecorder.start();
+    mediaRecorderRef.current = mediaRecorder;
     
     setIsRecording(true);
     setIsAnalyzing(true);
@@ -170,20 +212,80 @@ export const VoiceAnalyzer = () => {
 
   const stopRecording = () => {
     setIsRecording(false);
-    setIsAnalyzing(false);
+    setIsAnalyzing(true);
     
     if (animationRef.current) {
       cancelAnimationFrame(animationRef.current);
     }
     
+    // Stop MediaRecorder and process audio
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
+      mediaRecorderRef.current.stop();
+      
+      mediaRecorderRef.current.onstop = async () => {
+        try {
+          // Convert audio chunks to base64
+          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          
+          reader.onload = async () => {
+            const base64Audio = (reader.result as string).split(',')[1];
+            
+            // Send to Edge Function for analysis
+            const response = await fetch('https://skwpuolpkgntqdmgzwlr.functions.supabase.co/voice-analysis', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                audioData: base64Audio,
+                userId: user.id
+              })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+              const analysisResult: AnalysisResult = {
+                stressLevel: result.analysis.stress_indicators?.length > 2 ? 'high' : 
+                           result.analysis.stress_indicators?.length > 0 ? 'medium' : 'low',
+                emotionalTone: result.analysis.emotional_tone?.valence > 0.3 ? 'positive' :
+                              result.analysis.emotional_tone?.valence < -0.3 ? 'negative' : 'neutral',
+                confidence: result.analysis.confidence_score * 100 || 80,
+                recommendations: result.analysis.stress_indicators || [],
+                transcription: result.transcription,
+                emotional_tone: result.analysis.emotional_tone,
+                stress_indicators: result.analysis.stress_indicators
+              };
+              
+              setAnalysisResult(analysisResult);
+              
+              toast({
+                title: "Análise Concluída",
+                description: "Sua análise de voz foi salva com sucesso!"
+              });
+            } else {
+              throw new Error(result.error || 'Análise falhou');
+            }
+          };
+          
+          reader.readAsDataURL(audioBlob);
+        } catch (error) {
+          console.error('Erro ao processar áudio:', error);
+          toast({
+            title: "Erro na Análise",
+            description: "Falha ao analisar áudio. Tente novamente.",
+            variant: "destructive"
+          });
+        } finally {
+          setIsAnalyzing(false);
+        }
+      };
+    }
+    
     if (audioContextRef.current) {
       audioContextRef.current.close();
     }
-    
-    toast({
-      title: "Análise Concluída",
-      description: "Resultados processados com sucesso.",
-    });
   };
 
   const getStressColor = (level: string) => {
@@ -288,19 +390,35 @@ export const VoiceAnalyzer = () => {
                 </Badge>
               </div>
               
-              {analysisResult.recommendations.length > 0 && (
+              {analysisResult.transcription && (
                 <div className="space-y-2">
-                  <h5 className="font-medium text-sm">Recomendações:</h5>
+                  <h5 className="font-medium text-sm">Transcrição:</h5>
+                  <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
+                    "{analysisResult.transcription}"
+                  </p>
+                </div>
+              )}
+              
+              {analysisResult.stress_indicators && analysisResult.stress_indicators.length > 0 && (
+                <div className="space-y-2">
+                  <h5 className="font-medium text-sm">Indicadores de Estresse:</h5>
                   <ul className="space-y-1">
-                    {analysisResult.recommendations.map((rec, index) => (
+                    {analysisResult.stress_indicators.map((indicator, index) => (
                       <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 bg-health-primary rounded-full mt-1.5 flex-shrink-0" />
-                        {rec}
+                        <span className="w-1.5 h-1.5 bg-health-warning rounded-full mt-1.5 flex-shrink-0" />
+                        {indicator}
                       </li>
                     ))}
                   </ul>
                 </div>
               )}
+            </div>
+          )}
+
+          {isAnalyzing && !isRecording && (
+            <div className="space-y-2 border-t pt-4">
+              <div className="text-sm text-muted-foreground">Processando análise com IA...</div>
+              <Progress value={75} className="w-full" />
             </div>
           )}
         </CardContent>

@@ -47,6 +47,116 @@ export type Database = {
         }
         Relationships: []
       }
+      activity_data: {
+        Row: {
+          activity_type: string
+          calories_burned: number | null
+          created_at: string | null
+          distance_meters: number | null
+          duration_minutes: number
+          end_time: string
+          heart_rate_average: number | null
+          heart_rate_max: number | null
+          id: string
+          intensity_level: string | null
+          source: string | null
+          start_time: string
+          steps: number | null
+          user_id: string | null
+          workout_data: Json | null
+        }
+        Insert: {
+          activity_type: string
+          calories_burned?: number | null
+          created_at?: string | null
+          distance_meters?: number | null
+          duration_minutes: number
+          end_time: string
+          heart_rate_average?: number | null
+          heart_rate_max?: number | null
+          id?: string
+          intensity_level?: string | null
+          source?: string | null
+          start_time: string
+          steps?: number | null
+          user_id?: string | null
+          workout_data?: Json | null
+        }
+        Update: {
+          activity_type?: string
+          calories_burned?: number | null
+          created_at?: string | null
+          distance_meters?: number | null
+          duration_minutes?: number
+          end_time?: string
+          heart_rate_average?: number | null
+          heart_rate_max?: number | null
+          id?: string
+          intensity_level?: string | null
+          source?: string | null
+          start_time?: string
+          steps?: number | null
+          user_id?: string | null
+          workout_data?: Json | null
+        }
+        Relationships: []
+      }
+      correlation_analysis: {
+        Row: {
+          activity_correlation: Json | null
+          analysis_date: string
+          created_at: string | null
+          energy_score: number | null
+          heart_rate_correlation: Json | null
+          id: string
+          insights: Json | null
+          mood_score: number | null
+          recommendations: Json | null
+          sleep_correlation: Json | null
+          stress_score: number | null
+          user_id: string | null
+          voice_analysis_id: string | null
+        }
+        Insert: {
+          activity_correlation?: Json | null
+          analysis_date: string
+          created_at?: string | null
+          energy_score?: number | null
+          heart_rate_correlation?: Json | null
+          id?: string
+          insights?: Json | null
+          mood_score?: number | null
+          recommendations?: Json | null
+          sleep_correlation?: Json | null
+          stress_score?: number | null
+          user_id?: string | null
+          voice_analysis_id?: string | null
+        }
+        Update: {
+          activity_correlation?: Json | null
+          analysis_date?: string
+          created_at?: string | null
+          energy_score?: number | null
+          heart_rate_correlation?: Json | null
+          id?: string
+          insights?: Json | null
+          mood_score?: number | null
+          recommendations?: Json | null
+          sleep_correlation?: Json | null
+          stress_score?: number | null
+          user_id?: string | null
+          voice_analysis_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "correlation_analysis_voice_analysis_id_fkey"
+            columns: ["voice_analysis_id"]
+            isOneToOne: false
+            referencedRelation: "voice_analysis"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_activities: {
         Row: {
           activity_date: string
@@ -131,6 +241,75 @@ export type Database = {
           status?: string
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      health_data: {
+        Row: {
+          created_at: string | null
+          data_type: string
+          device_info: Json | null
+          id: string
+          recorded_at: string
+          source: string | null
+          synced_at: string | null
+          unit: string
+          user_id: string | null
+          value: number
+        }
+        Insert: {
+          created_at?: string | null
+          data_type: string
+          device_info?: Json | null
+          id?: string
+          recorded_at: string
+          source?: string | null
+          synced_at?: string | null
+          unit: string
+          user_id?: string | null
+          value: number
+        }
+        Update: {
+          created_at?: string | null
+          data_type?: string
+          device_info?: Json | null
+          id?: string
+          recorded_at?: string
+          source?: string | null
+          synced_at?: string | null
+          unit?: string
+          user_id?: string | null
+          value?: number
+        }
+        Relationships: []
+      }
+      heart_rate_data: {
+        Row: {
+          context: string | null
+          created_at: string | null
+          heart_rate: number
+          id: string
+          recorded_at: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          context?: string | null
+          created_at?: string | null
+          heart_rate: number
+          id?: string
+          recorded_at: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          context?: string | null
+          created_at?: string | null
+          heart_rate?: number
+          id?: string
+          recorded_at?: string
+          source?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -266,6 +445,63 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      sleep_data: {
+        Row: {
+          awake_minutes: number | null
+          created_at: string | null
+          deep_sleep_minutes: number | null
+          duration_minutes: number
+          heart_rate_average: number | null
+          heart_rate_variability: number | null
+          id: string
+          interruptions_count: number | null
+          light_sleep_minutes: number | null
+          quality_score: number | null
+          raw_data: Json | null
+          rem_sleep_minutes: number | null
+          sleep_end: string
+          sleep_start: string
+          source: string | null
+          user_id: string | null
+        }
+        Insert: {
+          awake_minutes?: number | null
+          created_at?: string | null
+          deep_sleep_minutes?: number | null
+          duration_minutes: number
+          heart_rate_average?: number | null
+          heart_rate_variability?: number | null
+          id?: string
+          interruptions_count?: number | null
+          light_sleep_minutes?: number | null
+          quality_score?: number | null
+          raw_data?: Json | null
+          rem_sleep_minutes?: number | null
+          sleep_end: string
+          sleep_start: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          awake_minutes?: number | null
+          created_at?: string | null
+          deep_sleep_minutes?: number | null
+          duration_minutes?: number
+          heart_rate_average?: number | null
+          heart_rate_variability?: number | null
+          id?: string
+          interruptions_count?: number | null
+          light_sleep_minutes?: number | null
+          quality_score?: number | null
+          raw_data?: Json | null
+          rem_sleep_minutes?: number | null
+          sleep_end?: string
+          sleep_start?: string
+          source?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
       }
       subscribers: {
         Row: {
@@ -473,6 +709,69 @@ export type Database = {
           sign?: string | null
           state?: string | null
           updated_at?: string
+        }
+        Relationships: []
+      }
+      voice_analysis: {
+        Row: {
+          audio_file_url: string | null
+          confidence_score: number | null
+          created_at: string | null
+          emotional_tone: Json | null
+          harmonics: number | null
+          id: string
+          jitter: number | null
+          pause_frequency: number | null
+          pitch_average: number | null
+          pitch_variability: number | null
+          psychological_analysis: Json | null
+          session_duration: number | null
+          speech_rate: number | null
+          stress_indicators: Json | null
+          transcription: string | null
+          updated_at: string | null
+          user_id: string | null
+          volume_average: number | null
+        }
+        Insert: {
+          audio_file_url?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          emotional_tone?: Json | null
+          harmonics?: number | null
+          id?: string
+          jitter?: number | null
+          pause_frequency?: number | null
+          pitch_average?: number | null
+          pitch_variability?: number | null
+          psychological_analysis?: Json | null
+          session_duration?: number | null
+          speech_rate?: number | null
+          stress_indicators?: Json | null
+          transcription?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          volume_average?: number | null
+        }
+        Update: {
+          audio_file_url?: string | null
+          confidence_score?: number | null
+          created_at?: string | null
+          emotional_tone?: Json | null
+          harmonics?: number | null
+          id?: string
+          jitter?: number | null
+          pause_frequency?: number | null
+          pitch_average?: number | null
+          pitch_variability?: number | null
+          psychological_analysis?: Json | null
+          session_duration?: number | null
+          speech_rate?: number | null
+          stress_indicators?: Json | null
+          transcription?: string | null
+          updated_at?: string | null
+          user_id?: string | null
+          volume_average?: number | null
         }
         Relationships: []
       }
