@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dashboard } from '@/components/Dashboard';
 import { VoiceAnalyzer } from '@/components/VoiceAnalyzer';
 import HealthDataSync from '@/components/HealthDataSync';
+import UserMenu from '@/components/UserMenu';
 import { 
   Brain, 
   Mic, 
@@ -52,6 +53,11 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-gradient-bg">
+      {/* Header with User Menu */}
+      <header className="absolute top-0 right-0 z-10 p-6">
+        <UserMenu />
+      </header>
+
       {/* Hero Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0">

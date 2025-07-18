@@ -1,428 +1,480 @@
-import { useState, useRef, useEffect } from 'react';
+
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Mic, MicOff, Activity, Brain, Heart } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from '@/components/ui/use-toast';
+import { 
+  Mic, 
+  MicOff, 
+  Play, 
+  Square, 
+  Brain,
+  Heart,
+  Activity,
+  Volume2,
+  Loader2
+} from 'lucide-react';
 
-interface VoiceMetrics {
-  pitch: number;
-  volume: number;
-  jitter: number;
-  harmonics: number;
-  timestamp: number;
-}
-
-interface AnalysisResult {
-  stressLevel: 'low' | 'medium' | 'high';
-  emotionalTone: 'positive' | 'neutral' | 'negative';
-  confidence: number;
-  recommendations: string[];
-  transcription?: string;
-  emotional_tone?: any;
-  stress_indicators?: string[];
+interface VoiceAnalysisResult {
+  transcription: string;
+  emotional_tone: {
+    dominant: string;
+    confidence: number;
+    emotions: Record<string, number>;
+  };
+  stress_indicators: {
+    level: string;
+    score: number;
+    indicators: string[];
+  };
+  psychological_analysis: {
+    mood_score: number;
+    energy_level: number;
+    insights: string[];
+    recommendations: string[];
+  };
+  voice_metrics: {
+    pitch_average: number;
+    volume_average: number;
+    speech_rate: number;
+    jitter: number;
+  };
+  confidence_score: number;
 }
 
 export const VoiceAnalyzer = () => {
+  const { user } = useAuth();
   const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
-  const [voiceMetrics, setVoiceMetrics] = useState<VoiceMetrics | null>(null);
-  const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(null);
-  const [audioLevel, setAudioLevel] = useState(0);
-  const [user, setUser] = useState<any>(null);
+  const [analysisResult, setAnalysisResult] = useState<VoiceAnalysisResult | null>(null);
+  const [recordingTime, setRecordingTime] = useState(0);
+  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   
-  const audioContextRef = useRef<AudioContext | null>(null);
-  const analyserRef = useRef<AnalyserNode | null>(null);
-  const microphoneRef = useRef<MediaStreamAudioSourceNode | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const animationRef = useRef<number>();
-  const { toast } = useToast();
+  const streamRef = useRef<MediaStream | null>(null);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Check authentication
-  useEffect(() => {
-    const getUser = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      setUser(user);
-    };
-    getUser();
-  }, []);
-
-  const initializeAudio = async () => {
+  const startRecording = async () => {
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
+          sampleRate: 16000,
+          channelCount: 1,
           echoCancellation: true,
-          noiseSuppression: true,
-          sampleRate: 44100
+          noiseSuppression: true
         }
       });
       
-      audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
-      analyserRef.current = audioContextRef.current.createAnalyser();
-      microphoneRef.current = audioContextRef.current.createMediaStreamSource(stream);
-      
-      analyserRef.current.fftSize = 2048;
-      microphoneRef.current.connect(analyserRef.current);
-      
-      return true;
-    } catch (error) {
-      console.error('Erro ao inicializar áudio:', error);
-      toast({
-        title: "Erro de Áudio",
-        description: "Não foi possível acessar o microfone. Verifique as permissões.",
-        variant: "destructive"
+      streamRef.current = stream;
+      const mediaRecorder = new MediaRecorder(stream, {
+        mimeType: 'audio/webm;codecs=opus'
       });
-      return false;
-    }
-  };
-
-  const analyzeVoice = () => {
-    if (!analyserRef.current) return;
-    
-    const dataArray = new Uint8Array(analyserRef.current.frequencyBinCount);
-    analyserRef.current.getByteFrequencyData(dataArray);
-    
-    // Calcular métricas básicas
-    const volume = dataArray.reduce((sum, val) => sum + val * val, 0) / dataArray.length;
-    const pitch = calculatePitch(dataArray);
-    const jitter = calculateJitter(dataArray);
-    const harmonics = calculateHarmonics(dataArray);
-    
-    const metrics: VoiceMetrics = {
-      pitch,
-      volume: Math.sqrt(volume),
-      jitter,
-      harmonics,
-      timestamp: Date.now()
-    };
-    
-    setVoiceMetrics(metrics);
-    setAudioLevel(Math.min(100, (metrics.volume / 50) * 100));
-    
-    // Simular análise mais complexa
-    const stressLevel = metrics.jitter > 30 ? 'high' : metrics.jitter > 15 ? 'medium' : 'low';
-    const emotionalTone = metrics.pitch > 200 ? 'positive' : metrics.pitch < 150 ? 'negative' : 'neutral';
-    
-    setAnalysisResult({
-      stressLevel,
-      emotionalTone,
-      confidence: Math.random() * 30 + 70, // Simulated confidence
-      recommendations: generateRecommendations(stressLevel, emotionalTone)
-    });
-    
-    animationRef.current = requestAnimationFrame(analyzeVoice);
-  };
-
-  const calculatePitch = (dataArray: Uint8Array): number => {
-    // Simplified pitch detection
-    let maxIndex = 0;
-    let maxValue = 0;
-    
-    for (let i = 1; i < dataArray.length / 2; i++) {
-      if (dataArray[i] > maxValue) {
-        maxValue = dataArray[i];
-        maxIndex = i;
-      }
-    }
-    
-    return maxIndex * (44100 / 2) / dataArray.length;
-  };
-
-  const calculateJitter = (dataArray: Uint8Array): number => {
-    let variations = 0;
-    for (let i = 1; i < dataArray.length; i++) {
-      variations += Math.abs(dataArray[i] - dataArray[i-1]);
-    }
-    return variations / (dataArray.length - 1);
-  };
-
-  const calculateHarmonics = (dataArray: Uint8Array): number => {
-    let harmonicStrength = 0;
-    for (let i = 0; i < 10; i++) {
-      const harmonicIndex = Math.floor((i + 1) * dataArray.length / 20);
-      if (harmonicIndex < dataArray.length) {
-        harmonicStrength += dataArray[harmonicIndex];
-      }
-    }
-    return harmonicStrength / 10;
-  };
-
-  const generateRecommendations = (stress: string, emotion: string): string[] => {
-    const recommendations = [];
-    
-    if (stress === 'high') {
-      recommendations.push('Pratique respiração profunda por 5 minutos');
-      recommendations.push('Considere uma pausa de 15 minutos');
-    }
-    
-    if (emotion === 'negative') {
-      recommendations.push('Tente uma atividade relaxante');
-      recommendations.push('Ouça música calma');
-    }
-    
-    if (stress === 'low' && emotion === 'positive') {
-      recommendations.push('Momento ideal para atividades produtivas');
-    }
-    
-    return recommendations.length > 0 ? recommendations : ['Continue monitorando seu bem-estar'];
-  };
-
-  const startRecording = async () => {
-    if (!user) {
+      
+      const chunks: Blob[] = [];
+      
+      mediaRecorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          chunks.push(event.data);
+        }
+      };
+      
+      mediaRecorder.onstop = () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        setAudioBlob(blob);
+      };
+      
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.start();
+      setIsRecording(true);
+      setRecordingTime(0);
+      
+      // Start timer
+      intervalRef.current = setInterval(() => {
+        setRecordingTime(prev => prev + 1);
+      }, 1000);
+      
       toast({
-        title: "Autenticação Necessária",
-        description: "Faça login para usar a análise de voz",
-        variant: "destructive"
+        title: 'Gravação iniciada',
+        description: 'Fale naturalmente. Mínimo 10 segundos recomendado.',
+      });
+      
+    } catch (error) {
+      console.error('Erro ao acessar microfone:', error);
+      toast({
+        title: 'Erro no microfone',
+        description: 'Permita o acesso ao microfone para continuar.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const stopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+      
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach(track => track.stop());
+      }
+      
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+      
+      toast({
+        title: 'Gravação finalizada',
+        description: 'Processando análise de voz...',
+      });
+    }
+  };
+
+  const analyzeVoice = async () => {
+    if (!audioBlob || !user) {
+      toast({
+        title: 'Erro na análise',
+        description: 'Nenhuma gravação encontrada ou usuário não autenticado.',
+        variant: 'destructive',
       });
       return;
     }
 
-    const initialized = await initializeAudio();
-    if (!initialized) return;
-
-    // Setup MediaRecorder for audio capture
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'audio/webm;codecs=opus'
-    });
-    
-    audioChunksRef.current = [];
-    
-    mediaRecorder.ondataavailable = (event) => {
-      if (event.data.size > 0) {
-        audioChunksRef.current.push(event.data);
-      }
-    };
-    
-    mediaRecorder.start();
-    mediaRecorderRef.current = mediaRecorder;
-    
-    setIsRecording(true);
-    setIsAnalyzing(true);
-    analyzeVoice();
-    
-    toast({
-      title: "Análise Iniciada",
-      description: "Analisando padrões vocais em tempo real...",
-    });
-  };
-
-  const stopRecording = () => {
-    setIsRecording(false);
     setIsAnalyzing(true);
     
-    if (animationRef.current) {
-      cancelAnimationFrame(animationRef.current);
-    }
-    
-    // Stop MediaRecorder and process audio
-    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== 'inactive') {
-      mediaRecorderRef.current.stop();
-      
-      mediaRecorderRef.current.onstop = async () => {
-        try {
-          // Convert audio chunks to base64
-          const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
-          const reader = new FileReader();
-          
-          reader.onload = async () => {
-            const base64Audio = (reader.result as string).split(',')[1];
-            
-            // Send to Edge Function for analysis
-            const response = await fetch('https://skwpuolpkgntqdmgzwlr.functions.supabase.co/voice-analysis', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                audioData: base64Audio,
-                userId: user.id
-              })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-              const analysisResult: AnalysisResult = {
-                stressLevel: result.analysis.stress_indicators?.length > 2 ? 'high' : 
-                           result.analysis.stress_indicators?.length > 0 ? 'medium' : 'low',
-                emotionalTone: result.analysis.emotional_tone?.valence > 0.3 ? 'positive' :
-                              result.analysis.emotional_tone?.valence < -0.3 ? 'negative' : 'neutral',
-                confidence: result.analysis.confidence_score * 100 || 80,
-                recommendations: result.analysis.stress_indicators || [],
-                transcription: result.transcription,
-                emotional_tone: result.analysis.emotional_tone,
-                stress_indicators: result.analysis.stress_indicators
-              };
-              
-              setAnalysisResult(analysisResult);
-              
-              toast({
-                title: "Análise Concluída",
-                description: "Sua análise de voz foi salva com sucesso!"
-              });
-            } else {
-              throw new Error(result.error || 'Análise falhou');
-            }
-          };
-          
-          reader.readAsDataURL(audioBlob);
-        } catch (error) {
-          console.error('Erro ao processar áudio:', error);
-          toast({
-            title: "Erro na Análise",
-            description: "Falha ao analisar áudio. Tente novamente.",
-            variant: "destructive"
-          });
-        } finally {
-          setIsAnalyzing(false);
+    try {
+      const formData = new FormData();
+      formData.append('audio', audioBlob, 'voice-sample.webm');
+      formData.append('user_id', user.id);
+      formData.append('session_duration', recordingTime.toString());
+
+      const response = await fetch(
+        'https://skwpuolpkgntqdmgzwlr.supabase.co/functions/v1/voice-analysis',
+        {
+          method: 'POST',
+          body: formData,
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
         }
-      };
-    }
-    
-    if (audioContextRef.current) {
-      audioContextRef.current.close();
+      );
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Erro na API:', errorText);
+        throw new Error(`Erro na análise: ${response.status}`);
+      }
+
+      const result = await response.json();
+      console.log('Resultado da análise:', result);
+      
+      setAnalysisResult(result);
+      
+      toast({
+        title: 'Análise concluída!',
+        description: 'Seus dados de voz foram processados com sucesso.',
+      });
+      
+    } catch (error) {
+      console.error('Erro na análise:', error);
+      toast({
+        title: 'Erro na análise',
+        description: 'Não foi possível processar a gravação. Tente novamente.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsAnalyzing(false);
     }
   };
 
-  const getStressColor = (level: string) => {
-    switch (level) {
-      case 'low': return 'health-success';
-      case 'medium': return 'health-warning';
-      case 'high': return 'destructive';
-      default: return 'muted';
-    }
-  };
-
-  const getEmotionColor = (tone: string) => {
-    switch (tone) {
-      case 'positive': return 'health-success';
-      case 'negative': return 'destructive';
-      default: return 'muted';
-    }
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   return (
-    <div className="space-y-6">
-      <Card className="bg-gradient-calm shadow-card border-health-primary/20">
-        <CardHeader className="text-center">
-          <CardTitle className="flex items-center justify-center gap-2 text-2xl">
-            <Brain className="h-6 w-6 text-health-primary" />
+    <div className="max-w-4xl mx-auto space-y-6">
+      {/* Recording Controls */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Mic className="h-6 w-6 text-health-primary" />
             Análise de Voz Inteligente
           </CardTitle>
           <CardDescription>
-            Detecte padrões emocionais através da análise vocal em tempo real
+            Grave sua voz para análise emocional e psicológica em tempo real
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex justify-center">
-            <Button
-              onClick={isRecording ? stopRecording : startRecording}
-              size="lg"
-              variant={isRecording ? "destructive" : "default"}
-              className={`h-16 w-16 rounded-full ${
-                isRecording 
-                  ? 'animate-pulse bg-destructive hover:bg-destructive/90' 
-                  : 'bg-gradient-primary hover:shadow-glow'
-              }`}
-            >
-              {isRecording ? (
-                <MicOff className="h-6 w-6" />
-              ) : (
-                <Mic className="h-6 w-6" />
-              )}
-            </Button>
-          </div>
-
-          {isRecording && (
-            <div className="space-y-4">
-              <div className="text-center">
-                <p className="text-sm text-muted-foreground mb-2">Nível de Áudio</p>
-                <Progress value={audioLevel} className="w-full h-2" />
-              </div>
-              
-              {voiceMetrics && (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                    <Activity className="h-4 w-4 mx-auto mb-1 text-health-primary" />
-                    <p className="text-xs text-muted-foreground">Pitch</p>
-                    <p className="font-semibold">{voiceMetrics.pitch.toFixed(0)} Hz</p>
+          <div className="flex items-center justify-center">
+            <div className="flex flex-col items-center space-y-4">
+              {isRecording && (
+                <div className="text-center">
+                  <div className="text-3xl font-mono text-health-primary">
+                    {formatTime(recordingTime)}
                   </div>
-                  <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                    <Heart className="h-4 w-4 mx-auto mb-1 text-health-accent" />
-                    <p className="text-xs text-muted-foreground">Volume</p>
-                    <p className="font-semibold">{voiceMetrics.volume.toFixed(1)}</p>
-                  </div>
-                  <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                    <Activity className="h-4 w-4 mx-auto mb-1 text-health-warning" />
-                    <p className="text-xs text-muted-foreground">Variabilidade</p>
-                    <p className="font-semibold">{voiceMetrics.jitter.toFixed(1)}</p>
-                  </div>
-                  <div className="text-center p-3 bg-secondary/50 rounded-lg">
-                    <Brain className="h-4 w-4 mx-auto mb-1 text-health-secondary" />
-                    <p className="text-xs text-muted-foreground">Harmônicos</p>
-                    <p className="font-semibold">{voiceMetrics.harmonics.toFixed(1)}</p>
+                  <div className="flex items-center gap-2 mt-2">
+                    <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                    <span className="text-sm text-muted-foreground">Gravando...</span>
                   </div>
                 </div>
               )}
-            </div>
-          )}
-
-          {analysisResult && (
-            <div className="space-y-4 border-t pt-4">
-              <h4 className="font-semibold flex items-center gap-2">
-                <Brain className="h-4 w-4" />
-                Análise Emocional
-              </h4>
               
-              <div className="flex gap-4 flex-wrap">
-                <Badge variant="outline" className={`bg-${getStressColor(analysisResult.stressLevel)}/10`}>
-                  Estresse: {analysisResult.stressLevel}
-                </Badge>
-                <Badge variant="outline" className={`bg-${getEmotionColor(analysisResult.emotionalTone)}/10`}>
-                  Tom: {analysisResult.emotionalTone}
-                </Badge>
-                <Badge variant="outline">
-                  Confiança: {analysisResult.confidence.toFixed(0)}%
-                </Badge>
+              <div className="flex gap-4">
+                {!isRecording ? (
+                  <Button 
+                    onClick={startRecording}
+                    size="lg"
+                    className="bg-gradient-primary hover:shadow-glow"
+                  >
+                    <Mic className="mr-2 h-5 w-5" />
+                    Iniciar Gravação
+                  </Button>
+                ) : (
+                  <Button 
+                    onClick={stopRecording}
+                    size="lg"
+                    variant="destructive"
+                  >
+                    <Square className="mr-2 h-4 w-4" />
+                    Parar Gravação
+                  </Button>
+                )}
+                
+                {audioBlob && !isRecording && (
+                  <Button 
+                    onClick={analyzeVoice}
+                    size="lg"
+                    disabled={isAnalyzing}
+                    className="bg-health-secondary hover:bg-health-secondary/90"
+                  >
+                    {isAnalyzing ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Brain className="mr-2 h-5 w-5" />
+                        Analisar Voz
+                      </>
+                    )}
+                  </Button>
+                )}
               </div>
               
-              {analysisResult.transcription && (
-                <div className="space-y-2">
-                  <h5 className="font-medium text-sm">Transcrição:</h5>
-                  <p className="text-sm text-muted-foreground bg-secondary/50 p-3 rounded-lg">
+              {recordingTime > 0 && !isRecording && (
+                <p className="text-sm text-muted-foreground">
+                  Gravação de {formatTime(recordingTime)} pronta para análise
+                </p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Analysis Results */}
+      {analysisResult && (
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Emotional Analysis */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Heart className="h-5 w-5 text-health-accent" />
+                Análise Emocional
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Tom Emocional Dominante</span>
+                  <Badge variant="secondary">
+                    {analysisResult.emotional_tone.dominant}
+                  </Badge>
+                </div>
+                <Progress 
+                  value={analysisResult.emotional_tone.confidence * 100} 
+                  className="h-2"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Confiança: {(analysisResult.emotional_tone.confidence * 100).toFixed(1)}%
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Emoções Detectadas</h4>
+                {Object.entries(analysisResult.emotional_tone.emotions).map(([emotion, value]) => (
+                  <div key={emotion} className="flex justify-between text-sm">
+                    <span className="capitalize">{emotion}</span>
+                    <span>{(value * 100).toFixed(1)}%</span>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Stress Indicators */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Activity className="h-5 w-5 text-health-primary" />
+                Indicadores de Stress
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium">Nível de Stress</span>
+                  <Badge variant={
+                    analysisResult.stress_indicators.level === 'low' ? 'default' :
+                    analysisResult.stress_indicators.level === 'moderate' ? 'secondary' : 'destructive'
+                  }>
+                    {analysisResult.stress_indicators.level}
+                  </Badge>
+                </div>
+                <Progress 
+                  value={analysisResult.stress_indicators.score} 
+                  className="h-2"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Score: {analysisResult.stress_indicators.score}/100
+                </span>
+              </div>
+
+              <div className="space-y-2">
+                <h4 className="font-medium">Indicadores Identificados</h4>
+                <ul className="text-sm space-y-1">
+                  {analysisResult.stress_indicators.indicators.map((indicator, index) => (
+                    <li key={index} className="flex items-center gap-2">
+                      <div className="w-1 h-1 bg-health-primary rounded-full" />
+                      {indicator}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Psychological Analysis */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Brain className="h-5 w-5 text-health-calm" />
+                Análise Psicológica
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Score de Humor</span>
+                      <span className="text-sm">{analysisResult.psychological_analysis.mood_score}/100</span>
+                    </div>
+                    <Progress value={analysisResult.psychological_analysis.mood_score} className="h-2" />
+                  </div>
+                  
+                  <div>
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm font-medium">Nível de Energia</span>
+                      <span className="text-sm">{analysisResult.psychological_analysis.energy_level}/100</span>
+                    </div>
+                    <Progress value={analysisResult.psychological_analysis.energy_level} className="h-2" />
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div>
+                    <h4 className="font-medium mb-2">Insights</h4>
+                    <ul className="text-sm space-y-1">
+                      {analysisResult.psychological_analysis.insights.map((insight, index) => (
+                        <li key={index} className="flex items-start gap-2">
+                          <div className="w-1 h-1 bg-health-accent rounded-full mt-2" />
+                          {insight}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="font-medium mb-2">Recomendações</h4>
+                <div className="grid gap-2">
+                  {analysisResult.psychological_analysis.recommendations.map((rec, index) => (
+                    <div key={index} className="p-3 bg-secondary/50 rounded-lg text-sm">
+                      {rec}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Voice Metrics */}
+          <Card className="md:col-span-2">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Volume2 className="h-5 w-5 text-health-secondary" />
+                Métricas Vocais
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-4 gap-4">
+                <div className="text-center p-4 bg-secondary/30 rounded-lg">
+                  <div className="text-2xl font-bold text-health-primary">
+                    {analysisResult.voice_metrics.pitch_average.toFixed(1)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">Hz</div>
+                  <div className="text-xs">Tom Médio</div>
+                </div>
+                
+                <div className="text-center p-4 bg-secondary/30 rounded-lg">
+                  <div className="text-2xl font-bold text-health-accent">
+                    {analysisResult.voice_metrics.volume_average.toFixed(1)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">dB</div>
+                  <div className="text-xs">Volume Médio</div>
+                </div>
+                
+                <div className="text-center p-4 bg-secondary/30 rounded-lg">
+                  <div className="text-2xl font-bold text-health-calm">
+                    {analysisResult.voice_metrics.speech_rate.toFixed(1)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">WPM</div>
+                  <div className="text-xs">Velocidade</div>
+                </div>
+                
+                <div className="text-center p-4 bg-secondary/30 rounded-lg">
+                  <div className="text-2xl font-bold text-health-secondary">
+                    {(analysisResult.confidence_score * 100).toFixed(1)}
+                  </div>
+                  <div className="text-sm text-muted-foreground">%</div>
+                  <div className="text-xs">Confiança</div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Transcription */}
+          {analysisResult.transcription && (
+            <Card className="md:col-span-2">
+              <CardHeader>
+                <CardTitle>Transcrição</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="p-4 bg-secondary/30 rounded-lg">
+                  <p className="text-sm leading-relaxed">
                     "{analysisResult.transcription}"
                   </p>
                 </div>
-              )}
-              
-              {analysisResult.stress_indicators && analysisResult.stress_indicators.length > 0 && (
-                <div className="space-y-2">
-                  <h5 className="font-medium text-sm">Indicadores de Estresse:</h5>
-                  <ul className="space-y-1">
-                    {analysisResult.stress_indicators.map((indicator, index) => (
-                      <li key={index} className="text-sm text-muted-foreground flex items-start gap-2">
-                        <span className="w-1.5 h-1.5 bg-health-warning rounded-full mt-1.5 flex-shrink-0" />
-                        {indicator}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
+              </CardContent>
+            </Card>
           )}
-
-          {isAnalyzing && !isRecording && (
-            <div className="space-y-2 border-t pt-4">
-              <div className="text-sm text-muted-foreground">Processando análise com IA...</div>
-              <Progress value={75} className="w-full" />
-            </div>
-          )}
-        </CardContent>
-      </Card>
+        </div>
+      )}
     </div>
   );
 };
