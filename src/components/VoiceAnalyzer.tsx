@@ -59,6 +59,7 @@ export const VoiceAnalyzer = () => {
 
   const startRecording = async () => {
     try {
+      console.log('Starting recording...');
       const stream = await navigator.mediaDevices.getUserMedia({ 
         audio: {
           sampleRate: 16000,
@@ -83,6 +84,7 @@ export const VoiceAnalyzer = () => {
       
       mediaRecorder.onstop = () => {
         const blob = new Blob(chunks, { type: 'audio/webm' });
+        console.log('Recording stopped, blob size:', blob.size);
         setAudioBlob(blob);
       };
       
@@ -112,6 +114,7 @@ export const VoiceAnalyzer = () => {
   };
 
   const stopRecording = () => {
+    console.log('Stopping recording...');
     if (mediaRecorderRef.current && isRecording) {
       mediaRecorderRef.current.stop();
       setIsRecording(false);
@@ -144,31 +147,42 @@ export const VoiceAnalyzer = () => {
     setIsAnalyzing(true);
     
     try {
+      console.log('Starting voice analysis...', { 
+        audioBlobSize: audioBlob.size, 
+        userId: user.id,
+        recordingTime 
+      });
+
       const formData = new FormData();
       formData.append('audio', audioBlob, 'voice-sample.webm');
       formData.append('user_id', user.id);
       formData.append('session_duration', recordingTime.toString());
+
+      console.log('Sending request to voice analysis function...');
 
       const response = await fetch(
         'https://skwpuolpkgntqdmgzwlr.supabase.co/functions/v1/voice-analysis',
         {
           method: 'POST',
           body: formData,
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
         }
       );
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Erro na API:', errorText);
-        throw new Error(`Erro na análise: ${response.status}`);
+        console.error('API Error Response:', errorText);
+        throw new Error(`Erro na análise: ${response.status} - ${errorText}`);
       }
 
       const result = await response.json();
-      console.log('Resultado da análise:', result);
+      console.log('Analysis result received:', result);
       
+      if (!result.success) {
+        throw new Error(result.error || 'Erro desconhecido na análise');
+      }
+
       setAnalysisResult(result);
       
       toast({
@@ -180,7 +194,7 @@ export const VoiceAnalyzer = () => {
       console.error('Erro na análise:', error);
       toast({
         title: 'Erro na análise',
-        description: 'Não foi possível processar a gravação. Tente novamente.',
+        description: error instanceof Error ? error.message : 'Não foi possível processar a gravação. Tente novamente.',
         variant: 'destructive',
       });
     } finally {
