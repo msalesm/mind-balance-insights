@@ -1,22 +1,22 @@
-
-import { useState, useRef } from 'react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
+import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { 
   Mic, 
-  MicOff, 
-  Play, 
   Square, 
   Brain,
   Heart,
   Activity,
   Volume2,
-  Loader2
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
+import saudeJaLogo from '@/assets/saude-ja-logo.png';
 
 interface VoiceAnalysisResult {
   transcription: string;
@@ -47,92 +47,18 @@ interface VoiceAnalysisResult {
 
 export const VoiceAnalyzer = () => {
   const { user } = useAuth();
-  const [isRecording, setIsRecording] = useState(false);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<VoiceAnalysisResult | null>(null);
-  const [recordingTime, setRecordingTime] = useState(0);
-  const [audioBlob, setAudioBlob] = useState<Blob | null>(null);
   
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const streamRef = useRef<MediaStream | null>(null);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  const startRecording = async () => {
-    try {
-      console.log('Starting recording...');
-      const stream = await navigator.mediaDevices.getUserMedia({ 
-        audio: {
-          sampleRate: 16000,
-          channelCount: 1,
-          echoCancellation: true,
-          noiseSuppression: true
-        }
-      });
-      
-      streamRef.current = stream;
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'audio/webm;codecs=opus'
-      });
-      
-      const chunks: Blob[] = [];
-      
-      mediaRecorder.ondataavailable = (event) => {
-        if (event.data.size > 0) {
-          chunks.push(event.data);
-        }
-      };
-      
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        console.log('Recording stopped, blob size:', blob.size);
-        setAudioBlob(blob);
-      };
-      
-      mediaRecorderRef.current = mediaRecorder;
-      mediaRecorder.start();
-      setIsRecording(true);
-      setRecordingTime(0);
-      
-      // Start timer
-      intervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      
-      toast({
-        title: 'Gravação iniciada',
-        description: 'Fale naturalmente. Mínimo 10 segundos recomendado.',
-      });
-      
-    } catch (error) {
-      console.error('Erro ao acessar microfone:', error);
-      toast({
-        title: 'Erro no microfone',
-        description: 'Permita o acesso ao microfone para continuar.',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const stopRecording = () => {
-    console.log('Stopping recording...');
-    if (mediaRecorderRef.current && isRecording) {
-      mediaRecorderRef.current.stop();
-      setIsRecording(false);
-      
-      if (streamRef.current) {
-        streamRef.current.getTracks().forEach(track => track.stop());
-      }
-      
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-      
-      toast({
-        title: 'Gravação finalizada',
-        description: 'Processando análise de voz...',
-      });
-    }
-  };
+  const {
+    isRecording,
+    recordingTime,
+    audioBlob,
+    supportedFormat,
+    startRecording,
+    stopRecording,
+    resetRecording
+  } = useAudioRecording();
 
   const analyzeVoice = async () => {
     if (!audioBlob || !user) {
@@ -150,11 +76,13 @@ export const VoiceAnalyzer = () => {
       console.log('Starting voice analysis...', { 
         audioBlobSize: audioBlob.size, 
         userId: user.id,
-        recordingTime 
+        recordingTime,
+        format: supportedFormat 
       });
 
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'voice-sample.webm');
+      const fileName = `voice-sample.${supportedFormat?.extension || 'webm'}`;
+      formData.append('audio', audioBlob, fileName);
       formData.append('user_id', user.id);
       formData.append('session_duration', recordingTime.toString());
 
@@ -208,17 +136,42 @@ export const VoiceAnalyzer = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const handleNewRecording = () => {
+    resetRecording();
+    setAnalysisResult(null);
+  };
+
   return (
     <div className="max-w-4xl mx-auto space-y-6">
+      {/* Header with Logo */}
+      <div className="text-center py-6">
+        <img 
+          src={saudeJaLogo} 
+          alt="Saúde Já" 
+          className="h-16 mx-auto mb-4"
+        />
+        <h1 className="text-3xl font-bold text-health-primary mb-2">
+          Análise de Voz Inteligente
+        </h1>
+        <p className="text-muted-foreground">
+          Plataforma avançada de saúde mental com IA
+        </p>
+      </div>
+
       {/* Recording Controls */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Mic className="h-6 w-6 text-health-primary" />
-            Análise de Voz Inteligente
+            Captação de Voz
           </CardTitle>
           <CardDescription>
             Grave sua voz para análise emocional e psicológica em tempo real
+            {supportedFormat && (
+              <span className="block mt-1 text-xs text-health-secondary">
+                Formato detectado: {supportedFormat.name}
+              </span>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -258,24 +211,35 @@ export const VoiceAnalyzer = () => {
                 )}
                 
                 {audioBlob && !isRecording && (
-                  <Button 
-                    onClick={analyzeVoice}
-                    size="lg"
-                    disabled={isAnalyzing}
-                    className="bg-health-secondary hover:bg-health-secondary/90"
-                  >
-                    {isAnalyzing ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Analisando...
-                      </>
-                    ) : (
-                      <>
-                        <Brain className="mr-2 h-5 w-5" />
-                        Analisar Voz
-                      </>
-                    )}
-                  </Button>
+                  <>
+                    <Button 
+                      onClick={analyzeVoice}
+                      size="lg"
+                      disabled={isAnalyzing}
+                      className="bg-health-secondary hover:bg-health-secondary/90"
+                    >
+                      {isAnalyzing ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Analisando...
+                        </>
+                      ) : (
+                        <>
+                          <Brain className="mr-2 h-5 w-5" />
+                          Analisar Voz
+                        </>
+                      )}
+                    </Button>
+                    
+                    <Button 
+                      onClick={handleNewRecording}
+                      size="lg"
+                      variant="outline"
+                    >
+                      <RefreshCw className="mr-2 h-4 w-4" />
+                      Nova Gravação
+                    </Button>
+                  </>
                 )}
               </div>
               

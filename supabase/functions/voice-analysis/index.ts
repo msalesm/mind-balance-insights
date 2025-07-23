@@ -47,7 +47,24 @@ serve(async (req) => {
 
     // Prepare form data for OpenAI Whisper
     const whisperFormData = new FormData();
-    whisperFormData.append('file', audioFile, 'audio.webm');
+    
+    // Detect audio format and set appropriate filename
+    let fileName = 'audio.webm';
+    if (audioFile.type.includes('mp4')) {
+      fileName = 'audio.mp4';
+    } else if (audioFile.type.includes('wav')) {
+      fileName = 'audio.wav';
+    } else if (audioFile.type.includes('ogg')) {
+      fileName = 'audio.ogg';
+    }
+    
+    console.log('Audio file details:', { 
+      type: audioFile.type, 
+      size: audioFile.size, 
+      fileName 
+    });
+    
+    whisperFormData.append('file', audioFile, fileName);
     whisperFormData.append('model', 'whisper-1');
     whisperFormData.append('language', 'pt');
 
