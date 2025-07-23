@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
-import { VOICE_ANALYSIS_URL, SUPABASE_ANON_KEY } from '@/lib/constants';
+import { supabase } from '@/integrations/supabase/client';
 import { 
   Mic, 
   Square, 
@@ -17,7 +17,6 @@ import {
   Loader2,
   RefreshCw
 } from 'lucide-react';
-import saudeJaLogo from '@/assets/saude-ja-logo.png';
 
 interface VoiceAnalysisResult {
   transcription: string;
@@ -89,23 +88,16 @@ export const VoiceAnalyzer = () => {
 
       console.log('Sending request to voice analysis function...');
 
-      const response = await fetch(VOICE_ANALYSIS_URL, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
+      const { data: result, error } = await supabase.functions.invoke('voice-analysis', {
         body: formData,
       });
 
-      console.log('Response status:', response.status);
+      console.log('Supabase function response:', { result, error });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('API Error Response:', errorText);
-        throw new Error(`Erro na análise: ${response.status} - ${errorText}`);
+      if (error) {
+        console.error('Supabase function error:', error);
+        throw new Error(`Erro na análise: ${error.message}`);
       }
-
-      const result = await response.json();
       console.log('Analysis result received:', result);
       
       if (!result.success) {
@@ -144,17 +136,12 @@ export const VoiceAnalyzer = () => {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      {/* Header with Logo */}
+      {/* Header */}
       <div className="text-center py-6">
-        <img 
-          src={saudeJaLogo} 
-          alt="Saúde Já" 
-          className="h-16 mx-auto mb-4"
-        />
-        <h1 className="text-3xl font-bold text-health-primary mb-2">
+        <h1 className="text-4xl font-bold text-health-primary mb-2">
           Análise de Voz Inteligente
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-lg">
           Plataforma avançada de saúde mental com IA
         </p>
       </div>
