@@ -101,6 +101,291 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_predictions: {
+        Row: {
+          confidence_score: number
+          created_at: string
+          data_sources: Json | null
+          id: string
+          metadata: Json | null
+          predicted_value: number
+          prediction_date: string
+          prediction_type: string
+          target_date: string
+          user_id: string
+        }
+        Insert: {
+          confidence_score?: number
+          created_at?: string
+          data_sources?: Json | null
+          id?: string
+          metadata?: Json | null
+          predicted_value: number
+          prediction_date?: string
+          prediction_type: string
+          target_date: string
+          user_id: string
+        }
+        Update: {
+          confidence_score?: number
+          created_at?: string
+          data_sources?: Json | null
+          id?: string
+          metadata?: Json | null
+          predicted_value?: number
+          prediction_date?: string
+          prediction_type?: string
+          target_date?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      ai_recommendations: {
+        Row: {
+          content: Json
+          created_at: string
+          description: string
+          effectiveness_score: number | null
+          expires_at: string | null
+          feedback_rating: number | null
+          id: string
+          priority: number
+          recommendation_type: string
+          title: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          content: Json
+          created_at?: string
+          description: string
+          effectiveness_score?: number | null
+          expires_at?: string | null
+          feedback_rating?: number | null
+          id?: string
+          priority?: number
+          recommendation_type: string
+          title: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          content?: Json
+          created_at?: string
+          description?: string
+          effectiveness_score?: number | null
+          expires_at?: string | null
+          feedback_rating?: number | null
+          id?: string
+          priority?: number
+          recommendation_type?: string
+          title?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      behavioral_patterns: {
+        Row: {
+          confidence: number
+          created_at: string
+          frequency: string | null
+          id: string
+          last_observed: string | null
+          pattern_data: Json
+          pattern_type: string
+          strength: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          confidence?: number
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          last_observed?: string | null
+          pattern_data: Json
+          pattern_type: string
+          strength?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          confidence?: number
+          created_at?: string
+          frequency?: string | null
+          id?: string
+          last_observed?: string | null
+          pattern_data?: Json
+          pattern_type?: string
+          strength?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      clothing_items: {
+        Row: {
+          brand: string | null
+          category: Database["public"]["Enums"]["clothing_category"]
+          color: string | null
+          condition: Database["public"]["Enums"]["clothing_condition"]
+          created_at: string
+          description: string
+          id: string
+          is_featured: boolean | null
+          price_credits: number
+          size: Database["public"]["Enums"]["clothing_size"]
+          status: Database["public"]["Enums"]["clothing_status"]
+          title: string
+          updated_at: string
+          user_id: string
+          view_count: number | null
+        }
+        Insert: {
+          brand?: string | null
+          category: Database["public"]["Enums"]["clothing_category"]
+          color?: string | null
+          condition: Database["public"]["Enums"]["clothing_condition"]
+          created_at?: string
+          description: string
+          id?: string
+          is_featured?: boolean | null
+          price_credits?: number
+          size: Database["public"]["Enums"]["clothing_size"]
+          status?: Database["public"]["Enums"]["clothing_status"]
+          title: string
+          updated_at?: string
+          user_id: string
+          view_count?: number | null
+        }
+        Update: {
+          brand?: string | null
+          category?: Database["public"]["Enums"]["clothing_category"]
+          color?: string | null
+          condition?: Database["public"]["Enums"]["clothing_condition"]
+          created_at?: string
+          description?: string
+          id?: string
+          is_featured?: boolean | null
+          price_credits?: number
+          size?: Database["public"]["Enums"]["clothing_size"]
+          status?: Database["public"]["Enums"]["clothing_status"]
+          title?: string
+          updated_at?: string
+          user_id?: string
+          view_count?: number | null
+        }
+        Relationships: []
+      }
+      clothing_photos: {
+        Row: {
+          clothing_item_id: string
+          created_at: string
+          id: string
+          is_primary: boolean | null
+          order_index: number | null
+          photo_url: string
+        }
+        Insert: {
+          clothing_item_id: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          order_index?: number | null
+          photo_url: string
+        }
+        Update: {
+          clothing_item_id?: string
+          created_at?: string
+          id?: string
+          is_primary?: boolean | null
+          order_index?: number | null
+          photo_url?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clothing_photos_clothing_item_id_fkey"
+            columns: ["clothing_item_id"]
+            isOneToOne: false
+            referencedRelation: "clothing_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      clothing_reviews: {
+        Row: {
+          comment: string | null
+          created_at: string
+          id: string
+          order_id: string
+          rating: number
+          reviewed_user_id: string
+          reviewer_id: string
+        }
+        Insert: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id: string
+          rating: number
+          reviewed_user_id: string
+          reviewer_id: string
+        }
+        Update: {
+          comment?: string | null
+          created_at?: string
+          id?: string
+          order_id?: string
+          rating?: number
+          reviewed_user_id?: string
+          reviewer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "clothing_reviews_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      conversations: {
+        Row: {
+          clothing_item_id: string | null
+          created_at: string
+          id: string
+          last_message_at: string | null
+          participant1_id: string
+          participant2_id: string
+        }
+        Insert: {
+          clothing_item_id?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant1_id: string
+          participant2_id: string
+        }
+        Update: {
+          clothing_item_id?: string | null
+          created_at?: string
+          id?: string
+          last_message_at?: string | null
+          participant1_id?: string
+          participant2_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "conversations_clothing_item_id_fkey"
+            columns: ["clothing_item_id"]
+            isOneToOne: false
+            referencedRelation: "clothing_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       correlation_analysis: {
         Row: {
           activity_correlation: Json | null
@@ -385,6 +670,100 @@ export type Database = {
           },
         ]
       }
+      messages: {
+        Row: {
+          content: string
+          conversation_id: string
+          created_at: string
+          id: string
+          is_read: boolean | null
+          sender_id: string
+        }
+        Insert: {
+          content: string
+          conversation_id: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          sender_id: string
+        }
+        Update: {
+          content?: string
+          conversation_id?: string
+          created_at?: string
+          id?: string
+          is_read?: boolean | null
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "messages_conversation_id_fkey"
+            columns: ["conversation_id"]
+            isOneToOne: false
+            referencedRelation: "conversations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          buyer_id: string
+          clothing_item_id: string
+          created_at: string
+          delivered_at: string | null
+          id: string
+          platform_fee: number
+          seller_id: string
+          shipped_at: string | null
+          shipping_address: Json
+          shipping_cost: number | null
+          status: Database["public"]["Enums"]["order_status"]
+          total_credits: number
+          tracking_code: string | null
+          updated_at: string
+        }
+        Insert: {
+          buyer_id: string
+          clothing_item_id: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          platform_fee: number
+          seller_id: string
+          shipped_at?: string | null
+          shipping_address: Json
+          shipping_cost?: number | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_credits: number
+          tracking_code?: string | null
+          updated_at?: string
+        }
+        Update: {
+          buyer_id?: string
+          clothing_item_id?: string
+          created_at?: string
+          delivered_at?: string | null
+          id?: string
+          platform_fee?: number
+          seller_id?: string
+          shipped_at?: string | null
+          shipping_address?: Json
+          shipping_cost?: number | null
+          status?: Database["public"]["Enums"]["order_status"]
+          total_credits?: number
+          tracking_code?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_clothing_item_id_fkey"
+            columns: ["clothing_item_id"]
+            isOneToOne: false
+            referencedRelation: "clothing_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       post_comments: {
         Row: {
           content: string
@@ -445,6 +824,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      premium_subscriptions: {
+        Row: {
+          created_at: string
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          starts_at: string
+          stripe_subscription_id: string | null
+          tier: Database["public"]["Enums"]["premium_tier"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          starts_at?: string
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["premium_tier"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          starts_at?: string
+          stripe_subscription_id?: string | null
+          tier?: Database["public"]["Enums"]["premium_tier"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       sleep_data: {
         Row: {
@@ -542,6 +957,87 @@ export type Database = {
           subscription_tier?: string | null
           updated_at?: string
           user_id?: string | null
+        }
+        Relationships: []
+      }
+      therapy_sessions: {
+        Row: {
+          ai_notes: Json | null
+          completed_at: string | null
+          completion_status: string
+          content: Json
+          created_at: string
+          duration_minutes: number | null
+          effectiveness_rating: number | null
+          id: string
+          session_type: string
+          title: string
+          user_id: string
+        }
+        Insert: {
+          ai_notes?: Json | null
+          completed_at?: string | null
+          completion_status?: string
+          content: Json
+          created_at?: string
+          duration_minutes?: number | null
+          effectiveness_rating?: number | null
+          id?: string
+          session_type: string
+          title: string
+          user_id: string
+        }
+        Update: {
+          ai_notes?: Json | null
+          completed_at?: string | null
+          completion_status?: string
+          content?: Json
+          created_at?: string
+          duration_minutes?: number | null
+          effectiveness_rating?: number | null
+          id?: string
+          session_type?: string
+          title?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          reference_id: string | null
+          status: Database["public"]["Enums"]["transaction_status"]
+          stripe_payment_intent_id: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          stripe_payment_intent_id?: string | null
+          type: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          reference_id?: string | null
+          status?: Database["public"]["Enums"]["transaction_status"]
+          stripe_payment_intent_id?: string | null
+          type?: Database["public"]["Enums"]["transaction_type"]
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -670,8 +1166,51 @@ export type Database = {
         }
         Relationships: []
       }
+      user_personality_profiles: {
+        Row: {
+          communication_style: string | null
+          coping_mechanisms: Json | null
+          created_at: string
+          id: string
+          learning_style: string | null
+          motivation_factors: Json | null
+          personality_traits: Json
+          stress_triggers: Json | null
+          therapy_preferences: Json
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          communication_style?: string | null
+          coping_mechanisms?: Json | null
+          created_at?: string
+          id?: string
+          learning_style?: string | null
+          motivation_factors?: Json | null
+          personality_traits?: Json
+          stress_triggers?: Json | null
+          therapy_preferences?: Json
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          communication_style?: string | null
+          coping_mechanisms?: Json | null
+          created_at?: string
+          id?: string
+          learning_style?: string | null
+          motivation_factors?: Json | null
+          personality_traits?: Json
+          stress_triggers?: Json | null
+          therapy_preferences?: Json
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_profiles: {
         Row: {
+          address: Json | null
           avatar_url: string | null
           city: string | null
           created_at: string
@@ -680,11 +1219,17 @@ export type Database = {
           lgpd_consent: boolean | null
           lgpd_consent_date: string | null
           name: string
+          phone: string | null
+          reputation_score: number | null
           sign: string | null
           state: string | null
+          total_purchases: number | null
+          total_sales: number | null
           updated_at: string
+          verified: boolean | null
         }
         Insert: {
+          address?: Json | null
           avatar_url?: string | null
           city?: string | null
           created_at?: string
@@ -693,11 +1238,17 @@ export type Database = {
           lgpd_consent?: boolean | null
           lgpd_consent_date?: string | null
           name: string
+          phone?: string | null
+          reputation_score?: number | null
           sign?: string | null
           state?: string | null
+          total_purchases?: number | null
+          total_sales?: number | null
           updated_at?: string
+          verified?: boolean | null
         }
         Update: {
+          address?: Json | null
           avatar_url?: string | null
           city?: string | null
           created_at?: string
@@ -706,9 +1257,50 @@ export type Database = {
           lgpd_consent?: boolean | null
           lgpd_consent_date?: string | null
           name?: string
+          phone?: string | null
+          reputation_score?: number | null
           sign?: string | null
           state?: string | null
+          total_purchases?: number | null
+          total_sales?: number | null
           updated_at?: string
+          verified?: boolean | null
+        }
+        Relationships: []
+      }
+      user_wallets: {
+        Row: {
+          available_credits: number
+          created_at: string
+          id: string
+          lifetime_earned: number
+          lifetime_spent: number
+          reserved_credits: number
+          total_credits: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          available_credits?: number
+          created_at?: string
+          id?: string
+          lifetime_earned?: number
+          lifetime_spent?: number
+          reserved_credits?: number
+          total_credits?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          available_credits?: number
+          created_at?: string
+          id?: string
+          lifetime_earned?: number
+          lifetime_spent?: number
+          reserved_credits?: number
+          total_credits?: number
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
@@ -786,7 +1378,52 @@ export type Database = {
       }
     }
     Enums: {
-      [_ in never]: never
+      clothing_category:
+        | "dresses"
+        | "tops"
+        | "bottoms"
+        | "jackets"
+        | "shoes"
+        | "accessories"
+        | "bags"
+      clothing_condition: "new" | "excellent" | "good" | "fair"
+      clothing_size:
+        | "PP"
+        | "P"
+        | "M"
+        | "G"
+        | "GG"
+        | "XG"
+        | "34"
+        | "36"
+        | "38"
+        | "40"
+        | "42"
+        | "44"
+        | "46"
+        | "48"
+      clothing_status:
+        | "available"
+        | "sold"
+        | "reserved"
+        | "shipped"
+        | "delivered"
+      order_status:
+        | "pending"
+        | "paid"
+        | "shipped"
+        | "delivered"
+        | "cancelled"
+        | "refunded"
+      premium_tier: "free" | "premium"
+      transaction_status: "pending" | "completed" | "cancelled" | "refunded"
+      transaction_type:
+        | "purchase"
+        | "sale"
+        | "credit_buy"
+        | "withdrawal"
+        | "fee"
+        | "refund"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -913,6 +1550,58 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      clothing_category: [
+        "dresses",
+        "tops",
+        "bottoms",
+        "jackets",
+        "shoes",
+        "accessories",
+        "bags",
+      ],
+      clothing_condition: ["new", "excellent", "good", "fair"],
+      clothing_size: [
+        "PP",
+        "P",
+        "M",
+        "G",
+        "GG",
+        "XG",
+        "34",
+        "36",
+        "38",
+        "40",
+        "42",
+        "44",
+        "46",
+        "48",
+      ],
+      clothing_status: [
+        "available",
+        "sold",
+        "reserved",
+        "shipped",
+        "delivered",
+      ],
+      order_status: [
+        "pending",
+        "paid",
+        "shipped",
+        "delivered",
+        "cancelled",
+        "refunded",
+      ],
+      premium_tier: ["free", "premium"],
+      transaction_status: ["pending", "completed", "cancelled", "refunded"],
+      transaction_type: [
+        "purchase",
+        "sale",
+        "credit_buy",
+        "withdrawal",
+        "fee",
+        "refund",
+      ],
+    },
   },
 } as const

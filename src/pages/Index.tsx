@@ -5,6 +5,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dashboard } from '@/components/Dashboard';
 import { VoiceAnalyzer } from '@/components/VoiceAnalyzer';
 import HealthDataSync from '@/components/HealthDataSync';
+import PredictiveDashboard from '@/components/PredictiveDashboard';
+import AITherapyChat from '@/components/AITherapyChat';
+import PersonalizedRecommendations from '@/components/PersonalizedRecommendations';
 import UserMenu from '@/components/UserMenu';
 import { 
   Brain, 
@@ -157,10 +160,22 @@ const Index = () => {
       {/* Main Application */}
       <section className="py-20 container mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-lg mx-auto mb-12 bg-secondary/50">
+          <TabsList className="grid w-full grid-cols-6 max-w-6xl mx-auto mb-12 bg-secondary/50">
             <TabsTrigger value="dashboard" className="flex items-center gap-2">
               <Activity className="h-4 w-4" />
               Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="predictions" className="flex items-center gap-2">
+              <Brain className="h-4 w-4" />
+              IA Preditiva
+            </TabsTrigger>
+            <TabsTrigger value="therapy" className="flex items-center gap-2">
+              <Sparkles className="h-4 w-4" />
+              Terapia IA
+            </TabsTrigger>
+            <TabsTrigger value="recommendations" className="flex items-center gap-2">
+              <Target className="h-4 w-4" />
+              Recomendações
             </TabsTrigger>
             <TabsTrigger value="voice" className="flex items-center gap-2">
               <Mic className="h-4 w-4" />
@@ -174,6 +189,18 @@ const Index = () => {
           
           <TabsContent value="dashboard" className="mt-8">
             <Dashboard />
+          </TabsContent>
+          
+          <TabsContent value="predictions" className="mt-8">
+            <PredictiveDashboard />
+          </TabsContent>
+          
+          <TabsContent value="therapy" className="mt-8">
+            <AITherapyChat />
+          </TabsContent>
+          
+          <TabsContent value="recommendations" className="mt-8">
+            <PersonalizedRecommendations />
           </TabsContent>
           
           <TabsContent value="voice" className="mt-8">
@@ -190,10 +217,10 @@ const Index = () => {
       <section className="py-20 bg-gradient-to-r from-health-primary/5 to-health-calm/5">
         <div className="container mx-auto px-4 text-center">
           <h3 className="text-2xl md:text-3xl font-bold mb-4">
-            Próximas Funcionalidades
+            Funcionalidades de IA Avançadas
           </h3>
           <p className="text-muted-foreground mb-8 max-w-2xl mx-auto">
-            Estamos desenvolvendo integrações avançadas que irão revolucionar o cuidado com a saúde mental
+            Tecnologias de inteligência artificial para revolucionar o cuidado com a saúde mental
           </p>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
@@ -205,19 +232,19 @@ const Index = () => {
               </p>
             </div>
             
-            <div className="p-6 bg-card/50 rounded-lg border border-health-accent/20">
+            <div className="p-6 bg-card/50 rounded-lg border border-health-accent/20 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab('predictions')}>
               <Brain className="h-8 w-8 text-health-accent mx-auto mb-4" />
-              <h4 className="font-semibold mb-2">IA Preditiva</h4>
+              <h4 className="font-semibold mb-2">IA Preditiva ✓</h4>
               <p className="text-sm text-muted-foreground">
-                Modelos de machine learning para predição de humor
+                Predições de humor e análise de padrões comportamentais
               </p>
             </div>
             
-            <div className="p-6 bg-card/50 rounded-lg border border-health-calm/20">
+            <div className="p-6 bg-card/50 rounded-lg border border-health-calm/20 cursor-pointer hover:bg-card/70 transition-colors" onClick={() => setActiveTab('therapy')}>
               <Sparkles className="h-8 w-8 text-health-calm mx-auto mb-4" />
-              <h4 className="font-semibold mb-2">Terapia Personalizada</h4>
+              <h4 className="font-semibold mb-2">Terapia com IA ✓</h4>
               <p className="text-sm text-muted-foreground">
-                Recomendações de intervenções baseadas em dados
+                Chatbot terapêutico e recomendações personalizadas
               </p>
             </div>
           </div>
