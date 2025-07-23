@@ -70,7 +70,11 @@ Return a JSON object with patterns identified, their strength (0-1), frequency, 
       });
 
       const aiResponse = await response.json();
-      const patterns = JSON.parse(aiResponse.choices[0].message.content);
+      const content = aiResponse.choices[0].message.content;
+      
+      // Remove markdown code blocks if present
+      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      const patterns = JSON.parse(cleanContent);
 
       // Store patterns in database
       for (const [patternType, patternData] of Object.entries(patterns)) {

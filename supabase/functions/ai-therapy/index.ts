@@ -135,7 +135,11 @@ Return JSON array with objects containing: type, title, description, priority (1
       });
 
       const aiResponse = await response.json();
-      const recommendations = JSON.parse(aiResponse.choices[0].message.content);
+      const content = aiResponse.choices[0].message.content;
+      
+      // Remove markdown code blocks if present
+      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      const recommendations = JSON.parse(cleanContent);
 
       // Store recommendations in database
       for (const rec of recommendations) {
