@@ -89,9 +89,12 @@ export const VoiceAnalyzer = () => {
       console.log('Sending request to voice analysis function...');
 
       const response = await fetch(
-        'https://skwpuolpkgntqdmgzwlr.supabase.co/functions/v1/voice-analysis',
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-analysis`,
         {
           method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          },
           body: formData,
         }
       );

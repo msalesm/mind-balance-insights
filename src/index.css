@@ -127,3 +127,13 @@ All colors MUST be HSL.
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .bg-gradient-primary {
+    background: var(--gradient-primary);
+  }
+  
+  .hover\:shadow-glow:hover {
+    box-shadow: var(--shadow-glow);
+  }
+}
