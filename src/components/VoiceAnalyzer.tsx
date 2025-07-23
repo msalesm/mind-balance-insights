@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
+import { VOICE_ANALYSIS_URL, SUPABASE_ANON_KEY } from '@/lib/constants';
 import { 
   Mic, 
   Square, 
@@ -88,16 +89,13 @@ export const VoiceAnalyzer = () => {
 
       console.log('Sending request to voice analysis function...');
 
-      const response = await fetch(
-        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/voice-analysis`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
-          },
-          body: formData,
-        }
-      );
+      const response = await fetch(VOICE_ANALYSIS_URL, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: formData,
+      });
 
       console.log('Response status:', response.status);
 
