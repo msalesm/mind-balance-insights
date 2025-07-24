@@ -199,7 +199,7 @@ export default function PersonalizedRecommendations() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 p-6">
+    <div className="max-w-6xl mx-auto space-y-6 p-4 md:p-6">
       {/* Header */}
       <div className="text-center space-y-2">
         <h1 className="text-3xl font-bold flex items-center justify-center gap-2">
@@ -266,14 +266,24 @@ export default function PersonalizedRecommendations() {
                       </div>
                     )}
 
-                    {recommendation.content.expected_benefit && (
-                      <div className="text-sm">
-                        <span className="font-medium">Benefício esperado:</span>
-                        <p className="text-muted-foreground mt-1">
-                          {recommendation.content.expected_benefit}
-                        </p>
-                      </div>
-                    )}
+                     {recommendation.content.expected_benefit && (
+                       <div className="text-sm">
+                         <span className="font-medium">Benefício esperado:</span>
+                         <p className="text-muted-foreground mt-1">
+                           {typeof recommendation.content.expected_benefit === 'string' 
+                             ? recommendation.content.expected_benefit.replace(/better mood/gi, 'melhor humor')
+                                 .replace(/reduced stress/gi, 'redução do estresse')
+                                 .replace(/improved sleep/gi, 'melhor qualidade do sono')
+                                 .replace(/increased focus/gi, 'maior foco')
+                                 .replace(/relaxation/gi, 'relaxamento')
+                                 .replace(/mindfulness/gi, 'atenção plena')
+                                 .replace(/stress relief/gi, 'alívio do estresse')
+                                 .replace(/emotional balance/gi, 'equilíbrio emocional')
+                             : recommendation.content.expected_benefit
+                           }
+                         </p>
+                       </div>
+                     )}
                   </div>
                 )}
 

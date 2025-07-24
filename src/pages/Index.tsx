@@ -160,30 +160,30 @@ const Index = () => {
       {/* Main Application */}
       <section className="py-20 container mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6 max-w-6xl mx-auto mb-12 bg-secondary/50">
-            <TabsTrigger value="dashboard" className="flex items-center gap-2">
-              <Activity className="h-4 w-4" />
-              Dashboard
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 max-w-6xl mx-auto mb-12 bg-secondary/50">{/* Mobile: 3 cols, Desktop: 6 cols */}
+            <TabsTrigger value="dashboard" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Activity className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="predictions" className="flex items-center gap-2">
-              <Brain className="h-4 w-4" />
-              IA Preditiva
+            <TabsTrigger value="predictions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Brain className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">IA Preditiva</span>
             </TabsTrigger>
-            <TabsTrigger value="therapy" className="flex items-center gap-2">
-              <Sparkles className="h-4 w-4" />
-              Terapia IA
+            <TabsTrigger value="therapy" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Sparkles className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Terapia IA</span>
             </TabsTrigger>
-            <TabsTrigger value="recommendations" className="flex items-center gap-2">
-              <Target className="h-4 w-4" />
-              Recomendações
+            <TabsTrigger value="recommendations" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Target className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Recomendações</span>
             </TabsTrigger>
-            <TabsTrigger value="voice" className="flex items-center gap-2">
-              <Mic className="h-4 w-4" />
-              Análise de Voz
+            <TabsTrigger value="voice" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Mic className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Análise de Voz</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center gap-2">
-              <Heart className="h-4 w-4" />
-              Saúde
+            <TabsTrigger value="health" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <Heart className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
           
