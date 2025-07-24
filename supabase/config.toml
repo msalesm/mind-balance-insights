@@ -1,5 +1,2 @@
 
 project_id = "skwpuolpkgntqdmgzwlr"
-
-[functions.voice-analysis]
-verify_jwt = false

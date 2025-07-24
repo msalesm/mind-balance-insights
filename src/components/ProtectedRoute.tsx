@@ -13,7 +13,7 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('ProtectedRoute: checking auth state', { user: user?.email, loading });
+    console.log('ProtectedRoute: checking auth state', { userAuthenticated: !!user, loading });
     
     if (!loading && !user) {
       console.log('ProtectedRoute: User not authenticated, redirecting to /auth');
