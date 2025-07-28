@@ -17,7 +17,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
     
     if (!loading && !user) {
       console.log('ProtectedRoute: User not authenticated, redirecting to /auth');
-      navigate('/auth');
+      // Preserve current URL parameters when redirecting to auth
+      const currentParams = new URLSearchParams(window.location.search);
+      const redirectUrl = currentParams.toString() ? `/auth?return=${encodeURIComponent(window.location.pathname + '?' + currentParams.toString())}` : '/auth';
+      navigate(redirectUrl);
     }
   }, [user, loading, navigate]);
 

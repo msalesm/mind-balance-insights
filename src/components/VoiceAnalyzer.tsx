@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -45,7 +45,12 @@ interface VoiceAnalysisResult {
   confidence_score: number;
 }
 
-export const VoiceAnalyzer = () => {
+interface VoiceAnalyzerProps {
+  autoStart?: boolean;
+  onAutoStartComplete?: () => void;
+}
+
+export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerProps) => {
   const { user } = useAuth();
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisResult, setAnalysisResult] = useState<VoiceAnalysisResult | null>(null);
@@ -133,6 +138,18 @@ export const VoiceAnalyzer = () => {
     resetRecording();
     setAnalysisResult(null);
   };
+
+  // Auto-start recording when requested
+  useEffect(() => {
+    if (autoStart && !isRecording && !audioBlob) {
+      const timer = setTimeout(() => {
+        startRecording();
+        onAutoStartComplete?.();
+      }, 500); // Small delay to ensure component is mounted
+      
+      return () => clearTimeout(timer);
+    }
+  }, [autoStart, isRecording, audioBlob, startRecording, onAutoStartComplete]);
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -27,6 +27,21 @@ import heroImage from '@/assets/hero-mental-health.jpg';
 
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [autoStartVoice, setAutoStartVoice] = useState(false);
+
+  // Check for URL parameters to handle auto-navigation
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const tab = urlParams.get('tab');
+    const autoStart = urlParams.get('autoStart');
+    
+    if (tab === 'voice') {
+      setActiveTab('voice');
+      if (autoStart === 'true') {
+        setAutoStartVoice(true);
+      }
+    }
+  }, []);
 
   const features = [
     {
@@ -97,7 +112,10 @@ const Index = () => {
               <Button 
                 size="lg" 
                 className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
-                onClick={() => setActiveTab('voice')}
+                onClick={() => {
+                  setActiveTab('voice');
+                  setAutoStartVoice(true);
+                }}
               >
                 Iniciar Análise de Voz
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -210,8 +228,8 @@ const Index = () => {
             <PersonalizedRecommendations />
           </TabsContent>
           
-          <TabsContent value="voice" className="mt-8">
-            <VoiceAnalyzer />
+           <TabsContent value="voice" className="mt-8">
+            <VoiceAnalyzer autoStart={autoStartVoice} onAutoStartComplete={() => setAutoStartVoice(false)} />
           </TabsContent>
           
           <TabsContent value="location" className="mt-8">

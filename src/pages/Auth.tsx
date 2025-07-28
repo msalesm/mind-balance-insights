@@ -22,12 +22,14 @@ const Auth = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const navigate = useNavigate();
 
-  // Check if user is already logged in
+  // Check if user is already logged in and handle return URL
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate('/');
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('return');
+        navigate(returnUrl || '/');
       }
     };
     checkUser();
@@ -98,7 +100,10 @@ const Auth = () => {
           title: 'Login realizado com sucesso!',
           description: 'Bem-vindo de volta.',
         });
-        navigate('/');
+        // Handle return URL after successful login
+        const urlParams = new URLSearchParams(window.location.search);
+        const returnUrl = urlParams.get('return');
+        navigate(returnUrl || '/');
       }
     } catch (error) {
       console.error('Unexpected error:', error);
