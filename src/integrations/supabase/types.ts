@@ -670,6 +670,51 @@ export type Database = {
           },
         ]
       }
+      location_visits: {
+        Row: {
+          address: string | null
+          arrived_at: string
+          created_at: string
+          duration_minutes: number | null
+          id: string
+          latitude: number
+          left_at: string | null
+          location_id: string | null
+          longitude: number
+          mood_score: number | null
+          notes: string | null
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          arrived_at?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          latitude: number
+          left_at?: string | null
+          location_id?: string | null
+          longitude: number
+          mood_score?: number | null
+          notes?: string | null
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          arrived_at?: string
+          created_at?: string
+          duration_minutes?: number | null
+          id?: string
+          latitude?: number
+          left_at?: string | null
+          location_id?: string | null
+          longitude?: number
+          mood_score?: number | null
+          notes?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       messages: {
         Row: {
           content: string
@@ -704,6 +749,54 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      mood_location_correlations: {
+        Row: {
+          avg_mood_score: number
+          created_at: string
+          id: string
+          last_visit_at: string
+          latitude: number
+          location_id: string | null
+          location_name: string
+          longitude: number
+          mood_trend: string | null
+          total_duration_minutes: number
+          updated_at: string
+          user_id: string
+          visit_count: number
+        }
+        Insert: {
+          avg_mood_score: number
+          created_at?: string
+          id?: string
+          last_visit_at?: string
+          latitude: number
+          location_id?: string | null
+          location_name: string
+          longitude: number
+          mood_trend?: string | null
+          total_duration_minutes?: number
+          updated_at?: string
+          user_id: string
+          visit_count?: number
+        }
+        Update: {
+          avg_mood_score?: number
+          created_at?: string
+          id?: string
+          last_visit_at?: string
+          latitude?: number
+          location_id?: string | null
+          location_name?: string
+          longitude?: number
+          mood_trend?: string | null
+          total_duration_minutes?: number
+          updated_at?: string
+          user_id?: string
+          visit_count?: number
+        }
+        Relationships: []
       }
       orders: {
         Row: {
@@ -1166,6 +1259,48 @@ export type Database = {
         }
         Relationships: []
       }
+      user_locations: {
+        Row: {
+          address: string | null
+          created_at: string
+          id: string
+          is_active: boolean
+          latitude: number
+          location_type: string
+          longitude: number
+          name: string
+          radius_meters: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude: number
+          location_type?: string
+          longitude: number
+          name: string
+          radius_meters?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          location_type?: string
+          longitude?: number
+          name?: string
+          radius_meters?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       user_personality_profiles: {
         Row: {
           communication_style: string | null
@@ -1265,6 +1400,30 @@ export type Database = {
           total_sales?: number | null
           updated_at?: string
           verified?: boolean | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string | null
+          user_id?: string
         }
         Relationships: []
       }
@@ -1372,12 +1531,24 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      get_current_user_role: {
+        Args: Record<PropertyKey, never>
+        Returns: Database["public"]["Enums"]["app_role"]
+      }
+      has_role: {
+        Args: {
+          _user_id: string
+          _role: Database["public"]["Enums"]["app_role"]
+        }
+        Returns: boolean
+      }
       update_trending_topics: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
     }
     Enums: {
+      app_role: "admin" | "moderator" | "user"
       clothing_category:
         | "dresses"
         | "tops"
@@ -1551,6 +1722,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
+      app_role: ["admin", "moderator", "user"],
       clothing_category: [
         "dresses",
         "tops",

@@ -9,6 +9,8 @@ import PredictiveDashboard from '@/components/PredictiveDashboard';
 import AITherapyChat from '@/components/AITherapyChat';
 import PersonalizedRecommendations from '@/components/PersonalizedRecommendations';
 import UserMenu from '@/components/UserMenu';
+import { LocationManager } from '@/components/LocationManager';
+import { LocationMoodTracker } from '@/components/LocationMoodTracker';
 import { 
   Brain, 
   Mic, 
@@ -18,7 +20,8 @@ import {
   ArrowRight,
   Shield,
   Zap,
-  Target
+  Target,
+  MapPin
 } from 'lucide-react';
 import heroImage from '@/assets/hero-mental-health.jpg';
 
@@ -160,7 +163,7 @@ const Index = () => {
       {/* Main Application */}
       <section className="py-20 container mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-6 max-w-6xl mx-auto mb-12 bg-secondary/50">{/* Mobile: 3 cols, Desktop: 6 cols */}
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 max-w-7xl mx-auto mb-12 bg-secondary/50">{/* Mobile: 3 cols, Desktop: 7 cols */}
             <TabsTrigger value="dashboard" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <Activity className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Dashboard</span>
@@ -180,6 +183,10 @@ const Index = () => {
             <TabsTrigger value="voice" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <Mic className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Análise de Voz</span>
+            </TabsTrigger>
+            <TabsTrigger value="location" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+              <MapPin className="h-3 w-3 md:h-4 md:w-4" />
+              <span className="hidden sm:inline">Localização</span>
             </TabsTrigger>
             <TabsTrigger value="health" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
               <Heart className="h-3 w-3 md:h-4 md:w-4" />
@@ -205,6 +212,13 @@ const Index = () => {
           
           <TabsContent value="voice" className="mt-8">
             <VoiceAnalyzer />
+          </TabsContent>
+          
+          <TabsContent value="location" className="mt-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <LocationManager />
+              <LocationMoodTracker />
+            </div>
           </TabsContent>
           
           <TabsContent value="health" className="mt-8">
