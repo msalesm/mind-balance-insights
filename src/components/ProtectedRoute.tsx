@@ -13,10 +13,10 @@ const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    console.log('ProtectedRoute: checking auth state', { userAuthenticated: !!user, loading });
+    console.log('ProtectedRoute: verificando estado de autenticação', { userAuthenticated: !!user, loading });
     
     if (!loading && !user) {
-      console.log('ProtectedRoute: User not authenticated, redirecting to /auth');
+      console.log('ProtectedRoute: Usuário não autenticado, redirecionando para /auth');
       // Preserve current URL parameters when redirecting to auth
       const currentParams = new URLSearchParams(window.location.search);
       const redirectUrl = currentParams.toString() ? `/auth?return=${encodeURIComponent(window.location.pathname + '?' + currentParams.toString())}` : '/auth';

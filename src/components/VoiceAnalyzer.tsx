@@ -118,7 +118,7 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
       });
       
     } catch (error) {
-      console.error('Erro na análise:', error);
+      console.error('Erro na análise de voz:', error);
       toast({
         title: 'Erro na análise',
         description: error instanceof Error ? error.message : 'Não foi possível processar a gravação. Tente novamente.',

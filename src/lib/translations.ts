@@ -131,6 +131,66 @@ export const translations = {
     'weeks': 'semanas',
     'month': 'mês',
     'months': 'meses'
+  },
+
+  // Estados de interface
+  interfaceStates: {
+    'loading': 'Carregando',
+    'error': 'Erro',
+    'success': 'Sucesso',
+    'failed': 'Falhou',
+    'completed': 'Concluído',
+    'processing': 'Processando',
+    'analyzing': 'Analisando',
+    'generating': 'Gerando',
+    'saving': 'Salvando',
+    'deleting': 'Excluindo',
+    'typing': 'Digitando',
+    'recording': 'Gravando',
+    'preparing': 'Preparando',
+    'waiting': 'Aguardando',
+    'ready': 'Pronto',
+    'not found': 'Não encontrado',
+    'unauthorized': 'Não autorizado',
+    'forbidden': 'Proibido',
+    'timeout': 'Tempo esgotado',
+    'offline': 'Offline',
+    'online': 'Online'
+  },
+
+  // Mensagens de erro específicas
+  errorMessages: {
+    'Error loading recommendations': 'Erro ao carregar recomendações',
+    'Error generating recommendations': 'Erro ao gerar recomendações',
+    'Error sending message': 'Erro ao enviar mensagem',
+    'Error loading data': 'Erro ao carregar dados',
+    'Error running analysis': 'Erro ao executar análise',
+    'Error loading health data': 'Erro ao carregar dados de saúde',
+    'Error syncing health data': 'Erro ao sincronizar dados de saúde',
+    'Failed to sync health data': 'Falha ao sincronizar dados de saúde',
+    'Sync Error': 'Erro de Sincronização',
+    'Authentication Error': 'Erro de Autenticação',
+    'Network Error': 'Erro de Rede',
+    'Server Error': 'Erro do Servidor'
+  },
+
+  // Mensagens de sucesso
+  successMessages: {
+    'Recommendations Updated': 'Recomendações Atualizadas',
+    'New personalized recommendations generated': 'Novas recomendações personalizadas foram geradas',
+    'Marked as used': 'Marcado como usado',
+    'Recommendation marked as executed': 'Recomendação marcada como executada',
+    'Feedback sent': 'Feedback enviado',
+    'Thank you for your feedback': 'Obrigado pelo seu feedback!',
+    'Analysis Updated': 'Análise Atualizada',
+    'New predictions generated successfully': 'Novas previsões geradas com sucesso',
+    'Health data synchronized successfully': 'Dados de saúde sincronizados com sucesso!',
+    'Data synced successfully': 'Dados sincronizados com sucesso',
+    'Location saved successfully': 'Local salvo com sucesso',
+    'Location removed successfully': 'Local removido com sucesso',
+    'Visit started successfully': 'Visita iniciada com sucesso',
+    'Visit ended successfully': 'Visita finalizada com sucesso',
+    'Mood recorded successfully': 'Humor registrado com sucesso'
   }
 };
 
@@ -158,4 +218,19 @@ export const translateEmotion = (emotion: string): string => {
 // Função específica para traduzir métricas de voz
 export const translateVoiceMetric = (metric: string): string => {
   return translate(metric, 'voiceMetrics');
+};
+
+// Função para traduzir mensagens de erro
+export const translateError = (errorMsg: string): string => {
+  return translate(errorMsg, 'errorMessages');
+};
+
+// Função para traduzir mensagens de sucesso
+export const translateSuccess = (successMsg: string): string => {
+  return translate(successMsg, 'successMessages');
+};
+
+// Função para traduzir estados da interface
+export const translateInterfaceState = (state: string): string => {
+  return translate(state, 'interfaceStates');
 };

@@ -62,7 +62,7 @@ const HealthDataSync: React.FC = () => {
       setMetrics(processedMetrics);
       setIsConnected(healthData && healthData.length > 0);
     } catch (error) {
-      console.error('Error loading health data:', error);
+      console.error('Erro ao carregar dados de saúde:', error);
     }
   };
 
@@ -150,7 +150,7 @@ const HealthDataSync: React.FC = () => {
       
       toast({
         title: "Sync Complete",
-        description: "Health data has been successfully synchronized!"
+        description: "Dados de saúde sincronizados com sucesso!"
       });
     } catch (error) {
       console.error('Error syncing health data:', error);

@@ -91,7 +91,7 @@ export default function AITherapyChat() {
       setMessages(prev => [...prev, assistantMessage]);
 
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Erro ao enviar mensagem:', error);
       toast({
         title: "Erro",
         description: "Erro ao enviar mensagem. Tente novamente.",
