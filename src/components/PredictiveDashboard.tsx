@@ -6,6 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
+import { translate } from '@/lib/translations';
 import { 
   TrendingUp, 
   TrendingDown, 
@@ -111,7 +112,8 @@ export default function PredictiveDashboard() {
       medium: 'bg-yellow-100 text-yellow-800', 
       high: 'bg-red-100 text-red-800'
     };
-    return <Badge className={colors[level] || colors.medium}>{level}</Badge>;
+    const translatedLevel = translate(level, 'riskLevels');
+    return <Badge className={colors[level] || colors.medium}>{translatedLevel}</Badge>;
   };
 
   if (isLoading) {
@@ -273,7 +275,7 @@ export default function PredictiveDashboard() {
                       <div className="flex flex-wrap gap-1">
                         {prediction.metadata.factors.slice(0, 2).map((factor: string, i: number) => (
                           <Badge key={i} variant="outline" className="text-xs">
-                            {factor}
+                            {translate(factor, 'psychologicalFactors')}
                           </Badge>
                         ))}
                       </div>

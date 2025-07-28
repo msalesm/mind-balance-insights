@@ -6,6 +6,7 @@ import { Progress } from '@/components/ui/progress';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
+import { translateBenefit, translateDifficulty } from '@/lib/translations';
 import { 
   Lightbulb, 
   Clock, 
@@ -175,14 +176,24 @@ export default function PersonalizedRecommendations() {
   };
 
   const getDifficultyBadge = (difficulty: string) => {
+    const translatedDifficulty = translateDifficulty(difficulty);
+    const difficultyLower = difficulty.toLowerCase();
     const styles = {
       easy: 'bg-green-100 text-green-800',
       medium: 'bg-yellow-100 text-yellow-800',
       hard: 'bg-red-100 text-red-800'
     };
+    
+    let styleKey = 'medium';
+    if (difficultyLower.includes('easy') || difficultyLower.includes('fácil')) {
+      styleKey = 'easy';
+    } else if (difficultyLower.includes('hard') || difficultyLower.includes('difícil')) {
+      styleKey = 'hard';
+    }
+    
     return (
-      <Badge variant="outline" className={styles[difficulty] || styles.medium}>
-        {difficulty === 'easy' ? 'Fácil' : difficulty === 'medium' ? 'Médio' : 'Difícil'}
+      <Badge variant="outline" className={styles[styleKey]}>
+        {translatedDifficulty}
       </Badge>
     );
   };
@@ -270,17 +281,7 @@ export default function PersonalizedRecommendations() {
                        <div className="text-sm">
                          <span className="font-medium">Benefício esperado:</span>
                          <p className="text-muted-foreground mt-1">
-                           {typeof recommendation.content.expected_benefit === 'string' 
-                             ? recommendation.content.expected_benefit.replace(/better mood/gi, 'melhor humor')
-                                 .replace(/reduced stress/gi, 'redução do estresse')
-                                 .replace(/improved sleep/gi, 'melhor qualidade do sono')
-                                 .replace(/increased focus/gi, 'maior foco')
-                                 .replace(/relaxation/gi, 'relaxamento')
-                                 .replace(/mindfulness/gi, 'atenção plena')
-                                 .replace(/stress relief/gi, 'alívio do estresse')
-                                 .replace(/emotional balance/gi, 'equilíbrio emocional')
-                             : recommendation.content.expected_benefit
-                           }
+                           {translateBenefit(recommendation.content.expected_benefit)}
                          </p>
                        </div>
                      )}

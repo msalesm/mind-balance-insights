@@ -7,6 +7,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
 import { supabase } from '@/integrations/supabase/client';
+import { translateVoiceMetric, translateEmotion, translate } from '@/lib/translations';
 import { 
   Mic, 
   Square, 
@@ -286,15 +287,15 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
                 </span>
               </div>
 
-              <div className="space-y-2">
-                <h4 className="font-medium">Emoções Detectadas</h4>
-                {Object.entries(analysisResult.emotional_tone.emotions).map(([emotion, value]) => (
-                  <div key={emotion} className="flex justify-between text-sm">
-                    <span className="capitalize">{emotion}</span>
-                    <span>{(value * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-              </div>
+                <div className="space-y-2">
+                  <h4 className="font-medium">Emoções Detectadas</h4>
+                  {Object.entries(analysisResult.emotional_tone.emotions).map(([emotion, value]) => (
+                    <div key={emotion} className="flex justify-between text-sm">
+                      <span className="capitalize">{translateEmotion(emotion)}</span>
+                      <span>{(value * 100).toFixed(1)}%</span>
+                    </div>
+                  ))}
+                </div>
             </CardContent>
           </Card>
 
@@ -307,16 +308,16 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium">Nível de Stress</span>
-                  <Badge variant={
-                    analysisResult.stress_indicators.level === 'low' ? 'default' :
-                    analysisResult.stress_indicators.level === 'moderate' ? 'secondary' : 'destructive'
-                  }>
-                    {analysisResult.stress_indicators.level}
-                  </Badge>
-                </div>
+                <div className="space-y-2">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium">Nível de Stress</span>
+                    <Badge variant={
+                      analysisResult.stress_indicators.level === 'low' ? 'default' :
+                      analysisResult.stress_indicators.level === 'moderate' ? 'secondary' : 'destructive'
+                    }>
+                      {translate(analysisResult.stress_indicators.level, 'stressLevels')}
+                    </Badge>
+                  </div>
                 <Progress 
                   value={analysisResult.stress_indicators.score} 
                   className="h-2"
