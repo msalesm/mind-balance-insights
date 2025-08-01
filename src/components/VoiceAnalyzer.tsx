@@ -104,10 +104,11 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
         console.error('Supabase function error:', error);
         throw new Error(`Erro na análise: ${error.message}`);
       }
-      console.log('Analysis result received:', result);
+      console.log('Resultado da análise recebido:', result);
       
       if (!result.success) {
-        throw new Error(result.error || 'Erro desconhecido na análise');
+        const errorMsg = result.error || result.technical_error || 'Erro desconhecido na análise';
+        throw new Error(errorMsg);
       }
 
       setAnalysisResult(result);

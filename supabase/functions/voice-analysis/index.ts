@@ -18,28 +18,47 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Voice analysis function called');
+    console.log('Função de análise de voz chamada');
     
     if (!openAIApiKey) {
-      console.error('OpenAI API key not found');
-      throw new Error('OpenAI API key not configured');
+      console.error('Chave da API OpenAI não encontrada');
+      throw new Error('Chave da API OpenAI não configurada');
     }
 
-    // Handle FormData from frontend
-    const formData = await req.formData();
+    // Verificar se há dados no body da requisição
+    let formData;
+    try {
+      formData = await req.formData();
+      console.log('FormData processado com sucesso');
+    } catch (formError) {
+      console.error('Erro ao processar FormData:', formError);
+      throw new Error('Dados de áudio inválidos ou ausentes');
+    }
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('user_id') as string;
     const sessionDuration = formData.get('session_duration') as string;
 
-    console.log('Received data:', { 
-      audioFileSize: audioFile?.size, 
-      userId, 
+    console.log('Dados recebidos:', { 
+      temArquivoAudio: !!audioFile,
+      tamanhoArquivo: audioFile?.size, 
+      tipoArquivo: audioFile?.type,
+      userId: userId ? 'presente' : 'ausente', 
       sessionDuration 
     });
 
-    if (!audioFile || !userId) {
-      console.error('Missing required data:', { audioFile: !!audioFile, userId: !!userId });
-      throw new Error('Missing audio file or user ID');
+    if (!audioFile) {
+      console.error('Arquivo de áudio não fornecido');
+      throw new Error('Arquivo de áudio é obrigatório');
+    }
+
+    if (!userId) {
+      console.error('ID do usuário não fornecido');
+      throw new Error('Usuário não autenticado');
+    }
+
+    if (audioFile.size === 0) {
+      console.error('Arquivo de áudio vazio');
+      throw new Error('Arquivo de áudio vazio ou corrompido');
     }
 
     // Create Supabase client
@@ -68,7 +87,7 @@ serve(async (req) => {
     whisperFormData.append('model', 'whisper-1');
     whisperFormData.append('language', 'pt');
 
-    console.log('Sending to OpenAI Whisper...');
+    console.log('Enviando para OpenAI Whisper...');
 
     // Get transcription from OpenAI
     const transcriptionResponse = await fetch('https://api.openai.com/v1/audio/transcriptions', {
@@ -81,14 +100,19 @@ serve(async (req) => {
 
     if (!transcriptionResponse.ok) {
       const errorText = await transcriptionResponse.text();
-      console.error('OpenAI Whisper error:', errorText);
-      throw new Error(`OpenAI API error: ${errorText}`);
+      console.error('Erro na API OpenAI Whisper:', errorText);
+      throw new Error(`Erro na API OpenAI: ${errorText}`);
     }
 
     const transcriptionResult = await transcriptionResponse.json();
     const transcription = transcriptionResult.text;
 
-    console.log('Transcription completed:', transcription.substring(0, 100) + '...');
+    console.log('Transcrição concluída:', transcription.substring(0, 100) + '...');
+
+    if (!transcription || transcription.trim().length === 0) {
+      console.error('Transcrição vazia recebida');
+      throw new Error('Não foi possível transcrever o áudio. Tente novamente com uma gravação mais clara.');
+    }
 
     // Analyze sentiment and emotional tone using OpenAI GPT
     const sentimentResponse = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -122,8 +146,8 @@ serve(async (req) => {
 
     if (!sentimentResponse.ok) {
       const errorText = await sentimentResponse.text();
-      console.error('OpenAI sentiment analysis error:', errorText);
-      throw new Error(`OpenAI sentiment analysis error: ${errorText}`);
+      console.error('Erro na análise de sentimento OpenAI:', errorText);
+      throw new Error(`Erro na análise de sentimento: ${errorText}`);
     }
 
     const sentimentResult = await sentimentResponse.json();
@@ -131,9 +155,9 @@ serve(async (req) => {
     
     try {
       analysis = JSON.parse(sentimentResult.choices[0].message.content);
-      console.log('Analysis completed successfully');
+      console.log('Análise concluída com sucesso');
     } catch (e) {
-      console.error('Error parsing analysis JSON:', e);
+      console.error('Erro ao processar análise JSON:', e);
       // Fallback analysis if JSON parsing fails
       analysis = {
         emotional_tone: { 
@@ -163,7 +187,7 @@ serve(async (req) => {
     }
 
     // Save to database
-    console.log('Saving to database...');
+    console.log('Salvando no banco de dados...');
     const { data, error } = await supabase
       .from('voice_analysis')
       .insert([
@@ -188,11 +212,11 @@ serve(async (req) => {
       .single();
 
     if (error) {
-      console.error('Database error:', error);
-      throw new Error(`Database error: ${error.message}`);
+      console.error('Erro no banco de dados:', error);
+      throw new Error(`Erro no banco de dados: ${error.message}`);
     }
 
-    console.log('Analysis saved successfully');
+    console.log('Análise salva com sucesso');
 
     return new Response(JSON.stringify({
       success: true,
@@ -207,10 +231,27 @@ serve(async (req) => {
     });
 
   } catch (error) {
-    console.error('Error in voice-analysis function:', error);
+    console.error('Erro na função voice-analysis:', error);
+    
+    // Mapear erros específicos para mensagens mais amigáveis
+    let userMessage = 'Erro interno do servidor. Tente novamente.';
+    
+    if (error.message.includes('OpenAI API key')) {
+      userMessage = 'Configuração da API não encontrada. Contate o suporte.';
+    } else if (error.message.includes('Dados de áudio inválidos')) {
+      userMessage = 'Arquivo de áudio inválido. Tente gravar novamente.';
+    } else if (error.message.includes('Usuário não autenticado')) {
+      userMessage = 'Você precisa estar logado para usar esta funcionalidade.';
+    } else if (error.message.includes('Arquivo de áudio vazio')) {
+      userMessage = 'Arquivo de áudio vazio. Tente gravar novamente.';
+    } else if (error.message.includes('transcrever o áudio')) {
+      userMessage = 'Não foi possível processar o áudio. Tente uma gravação mais clara.';
+    }
+    
     return new Response(JSON.stringify({ 
-      error: error.message,
-      success: false 
+      error: userMessage,
+      success: false,
+      technical_error: error.message // Para debug
     }), {
       status: 500,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
