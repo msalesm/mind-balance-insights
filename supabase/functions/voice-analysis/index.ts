@@ -18,21 +18,47 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Função de análise de voz chamada');
+    console.log('Voice analysis function called');
+    console.log('Request method:', req.method);
+    console.log('Content-Type:', req.headers.get('content-type'));
     
     if (!openAIApiKey) {
-      console.error('Chave da API OpenAI não encontrada');
-      throw new Error('Chave da API OpenAI não configurada');
+      console.error('OpenAI API key not found');
+      throw new Error('OpenAI API key not configured');
     }
 
-    // Verificar se há dados no body da requisição
+    // Get raw request body first for debugging
+    const contentType = req.headers.get('content-type') || '';
+    console.log('Content-Type header:', contentType);
+
+    if (!contentType.includes('multipart/form-data')) {
+      console.error('Invalid content type. Expected multipart/form-data, got:', contentType);
+      throw new Error('Content-Type deve ser multipart/form-data');
+    }
+
+    // Process FormData with better error handling
     let formData;
     try {
       formData = await req.formData();
-      console.log('FormData processado com sucesso');
+      console.log('FormData processed successfully');
+      
+      // Log all form fields for debugging
+      const formEntries = Array.from(formData.entries());
+      console.log('FormData entries:', formEntries.map(([key, value]) => ({
+        key,
+        type: typeof value,
+        isFile: value instanceof File,
+        size: value instanceof File ? value.size : value.toString().length
+      })));
+      
     } catch (formError) {
-      console.error('Erro ao processar FormData:', formError);
-      throw new Error('Dados de áudio inválidos ou ausentes');
+      console.error('Error processing FormData:', formError);
+      console.error('FormData error details:', {
+        name: formError.name,
+        message: formError.message,
+        stack: formError.stack
+      });
+      throw new Error('Erro ao processar dados de áudio. Tente novamente.');
     }
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('user_id') as string;

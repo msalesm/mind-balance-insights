@@ -67,10 +67,38 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
   } = useAudioRecording();
 
   const analyzeVoice = async () => {
-    if (!audioBlob || !user) {
+    if (!user) {
       toast({
         title: 'Erro na análise',
-        description: 'Nenhuma gravação encontrada ou usuário não autenticado.',
+        description: 'Você precisa estar logado para usar esta funcionalidade.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (!audioBlob) {
+      toast({
+        title: 'Erro na análise',
+        description: 'Nenhuma gravação encontrada. Faça uma gravação primeiro.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Validate audio blob
+    if (audioBlob.size === 0) {
+      toast({
+        title: 'Erro na análise',
+        description: 'Arquivo de áudio vazio. Tente gravar novamente.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (audioBlob.size > 25 * 1024 * 1024) { // 25MB limit
+      toast({
+        title: 'Erro na análise',
+        description: 'Arquivo muito grande. Tente uma gravação mais curta.',
         variant: 'destructive',
       });
       return;
@@ -81,16 +109,31 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
     try {
       console.log('Starting voice analysis...', { 
         audioBlobSize: audioBlob.size, 
+        audioBlobType: audioBlob.type,
         userId: user.id,
         recordingTime,
         format: supportedFormat 
       });
 
+      // Create FormData with proper headers
       const formData = new FormData();
       const fileName = `voice-sample.${supportedFormat?.extension || 'webm'}`;
-      formData.append('audio', audioBlob, fileName);
+      
+      // Ensure proper mime type
+      const mimeType = supportedFormat?.mimeType.split(';')[0] || 'audio/webm';
+      const audioFile = new File([audioBlob], fileName, { type: mimeType });
+      
+      formData.append('audio', audioFile);
       formData.append('user_id', user.id);
       formData.append('session_duration', recordingTime.toString());
+
+      console.log('FormData prepared:', {
+        fileName,
+        mimeType,
+        fileSize: audioFile.size,
+        userId: user.id,
+        sessionDuration: recordingTime
+      });
 
       console.log('Sending request to voice analysis function...');
 
