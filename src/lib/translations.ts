@@ -16,7 +16,30 @@ export const translations = {
     'stress management': 'gestão do estresse',
     'improved confidence': 'melhoria da confiança',
     'better relationships': 'melhores relacionamentos',
-    'emotional regulation': 'regulação emocional'
+    'emotional regulation': 'regulação emocional',
+    // Variações em português
+    'melhora do humor': 'melhora do humor',
+    'redução do estresse': 'redução do estresse',
+    'melhoria do foco': 'melhoria do foco',
+    'melhoria do sono': 'melhoria do sono',
+    'aumento da energia': 'aumento da energia',
+    'equilíbrio emocional': 'equilíbrio emocional',
+    'alívio da ansiedade': 'alívio da ansiedade',
+    'clareza mental': 'clareza mental',
+    'relaxamento': 'relaxamento',
+    'atenção plena': 'atenção plena',
+    'autoconhecimento': 'autoconhecimento',
+    'gestão do estresse': 'gestão do estresse',
+    'melhoria da confiança': 'melhoria da confiança',
+    'melhores relacionamentos': 'melhores relacionamentos',
+    'regulação emocional': 'regulação emocional',
+    'diminuição da ansiedade': 'alívio da ansiedade',
+    'reduz estresse': 'redução do estresse',
+    'melhora concentração': 'melhoria do foco',
+    'sono mais reparador': 'melhoria do sono',
+    'mais energia': 'aumento da energia',
+    'calma e tranquilidade': 'relaxamento',
+    'maior autocontrole': 'regulação emocional'
   },
 
   // Níveis de dificuldade
@@ -26,7 +49,14 @@ export const translations = {
     'hard': 'difícil',
     'beginner': 'iniciante',
     'intermediate': 'intermediário',
-    'advanced': 'avançado'
+    'advanced': 'avançado',
+    // Versões em português
+    'fácil': 'fácil',
+    'médio': 'médio',
+    'difícil': 'difícil',
+    'iniciante': 'iniciante',
+    'intermediário': 'intermediário',
+    'avançado': 'avançado'
   },
 
   // Tipos de recomendação

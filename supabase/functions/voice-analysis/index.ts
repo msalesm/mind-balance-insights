@@ -1,4 +1,3 @@
-
 import "https://deno.land/x/xhr@0.1.0/mod.ts";
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -22,7 +21,6 @@ serve(async (req) => {
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Content-Type:', req.headers.get('content-type'));
-    console.log('All headers:', Object.fromEntries(req.headers.entries()));
     
     // Check for authorization header
     const authHeader = req.headers.get('authorization');
@@ -44,7 +42,6 @@ serve(async (req) => {
 
     // Process FormData with better error handling
     let formData;
-    let rawBody;
     
     try {
       // First try to get the raw body for debugging
@@ -94,6 +91,7 @@ serve(async (req) => {
         }
       );
     }
+    
     // Extract and validate form data
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('user_id') as string;
@@ -152,7 +150,6 @@ serve(async (req) => {
         }
       );
     }
-
 
     // Create Supabase client
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
@@ -247,10 +244,16 @@ serve(async (req) => {
     let analysis;
     
     try {
-      analysis = JSON.parse(sentimentResult.choices[0].message.content);
+      const content = sentimentResult.choices[0].message.content;
+      console.log('Raw AI response:', content);
+      
+      // Remove any markdown code blocks and clean the content
+      const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
+      analysis = JSON.parse(cleanContent);
       console.log('Análise concluída com sucesso');
-    } catch (e) {
-      console.error('Erro ao processar análise JSON:', e);
+    } catch (parseError) {
+      console.error('Erro ao processar análise JSON:', parseError);
+      console.error('Content was:', sentimentResult.choices[0].message.content);
       // Fallback analysis if JSON parsing fails
       analysis = {
         emotional_tone: { 

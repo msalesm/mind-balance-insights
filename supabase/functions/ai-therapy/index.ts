@@ -103,20 +103,22 @@ Never diagnose or replace professional therapy. Focus on guidance, support, and 
 
     if (action === 'generate_recommendations') {
       // Generate personalized recommendations
-      const prompt = `Based on this user's data, generate 5 personalized mental health recommendations:
+      const prompt = `Com base nos dados deste usuário, gere 5 recomendações personalizadas de saúde mental EM PORTUGUÊS:
 
-User Profile: ${JSON.stringify(profile.data || {})}
-Recent Analysis: ${JSON.stringify(recentVoice.data || [])}
-Patterns: ${JSON.stringify(patterns.data || [])}
+Perfil do Usuário: ${JSON.stringify(profile.data || {})}
+Análise Recente: ${JSON.stringify(recentVoice.data || [])}
+Padrões: ${JSON.stringify(patterns.data || [])}
 
-Generate recommendations for:
-1. Stress management techniques
-2. Mood improvement activities  
-3. Sleep optimization
-4. Mindfulness exercises
-5. Lifestyle adjustments
+Gere recomendações para:
+1. Técnicas de gerenciamento de estresse
+2. Atividades para melhoria do humor
+3. Otimização do sono
+4. Exercícios de mindfulness
+5. Ajustes no estilo de vida
 
-Return JSON array with objects containing: type, title, description, priority (1-3), duration_minutes, difficulty (easy/medium/hard), expected_benefit.`;
+Retorne um array JSON com objetos contendo: type, title, description, priority (1-3), duration_minutes, difficulty (fácil/médio/difícil), expected_benefit.
+
+IMPORTANTE: Todos os textos devem estar em português brasileiro. Os campos type podem ser: "stress", "mood", "sleep", "mindfulness", "lifestyle".`;
 
       const response = await fetch('https://api.openai.com/v1/chat/completions', {
         method: 'POST',
@@ -127,7 +129,7 @@ Return JSON array with objects containing: type, title, description, priority (1
         body: JSON.stringify({
           model: 'gpt-4o-mini',
           messages: [
-            { role: 'system', content: 'You are a mental health AI generating personalized recommendations. Return valid JSON only.' },
+            { role: 'system', content: 'Você é uma IA de saúde mental gerando recomendações personalizadas. Retorne apenas JSON válido em português brasileiro.' },
             { role: 'user', content: prompt }
           ],
           temperature: 0.5,
