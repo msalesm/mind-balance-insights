@@ -3,9 +3,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
-import { Heart, Activity, Moon, Footprints } from 'lucide-react';
+import { Heart, Activity, Moon, Footprints, Watch, Smartphone } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/components/ui/use-toast';
+import { useHealthKit } from '@/hooks/useHealthKit';
+import { useAppleWatch } from '@/hooks/useAppleWatch';
 
 interface HealthMetrics {
   steps: number;
@@ -22,6 +24,10 @@ const HealthDataSync: React.FC = () => {
   const [metrics, setMetrics] = useState<HealthMetrics | null>(null);
   const [user, setUser] = useState<any>(null);
   const { toast } = useToast();
+  
+  // Native integrations
+  const healthKit = useHealthKit();
+  const appleWatch = useAppleWatch();
 
   useEffect(() => {
     const getUser = async () => {
@@ -66,101 +72,139 @@ const HealthDataSync: React.FC = () => {
     }
   };
 
-  const simulateHealthSync = async () => {
+  const handleHealthKitSync = async () => {
     if (!user) {
       toast({
-        title: "Authentication Required",
-        description: "Please log in to sync health data",
+        title: "Autenticação necessária",
+        description: "Faça login para sincronizar dados de saúde",
         variant: "destructive"
       });
       return;
     }
 
+    // First, request authorization if needed
+    if (!healthKit.isAuthorized) {
+      const authorized = await healthKit.requestAuthorization();
+      if (!authorized) return;
+    }
+
     setIsSyncing(true);
     
     try {
-      // Simulate health data from iPhone/Apple Health
-      const mockHealthData = [
-        { data_type: 'steps', value: Math.floor(Math.random() * 5000) + 8000, unit: 'count' },
-        { data_type: 'distance', value: Math.random() * 3 + 5, unit: 'km' },
-        { data_type: 'calories', value: Math.floor(Math.random() * 500) + 1800, unit: 'kcal' },
-        { data_type: 'heart_rate', value: Math.floor(Math.random() * 30) + 60, unit: 'bpm' },
-        { data_type: 'weight', value: Math.random() * 20 + 70, unit: 'kg' }
-      ];
+      const endDate = new Date();
+      const startDate = new Date(endDate.getTime() - 24 * 60 * 60 * 1000); // Last 24 hours
 
-      const recordedAt = new Date();
+      // Read data from HealthKit
+      const [heartRateData, stepsData, sleepData] = await Promise.all([
+        healthKit.readHeartRate(startDate, endDate),
+        healthKit.readSteps(startDate, endDate),
+        healthKit.readSleep(startDate, endDate)
+      ]);
 
-      // Insert health data
-      for (const data of mockHealthData) {
+      // Process and insert heart rate data
+      for (const sample of heartRateData) {
         await supabase
           .from('health_data')
           .insert([{
             user_id: user.id,
-            data_type: data.data_type,
-            value: data.value,
-            unit: data.unit,
-            recorded_at: recordedAt.toISOString(),
-            source: 'apple_health'
+            data_type: 'heart_rate',
+            value: sample.value,
+            unit: 'bpm',
+            recorded_at: sample.date,
+            source: 'healthkit'
           }]);
       }
 
-      // Simulate sleep data
-      const sleepEnd = new Date();
-      const sleepStart = new Date(sleepEnd.getTime() - (7.5 * 60 * 60 * 1000));
-      
-      await supabase
-        .from('sleep_data')
-        .insert([{
-          user_id: user.id,
-          sleep_start: sleepStart.toISOString(),
-          sleep_end: sleepEnd.toISOString(),
-          duration_minutes: 450,
-          quality_score: Math.random() * 30 + 70,
-          deep_sleep_minutes: Math.floor(Math.random() * 60) + 90,
-          light_sleep_minutes: Math.floor(Math.random() * 120) + 180,
-          rem_sleep_minutes: Math.floor(Math.random() * 60) + 90,
-          awake_minutes: Math.floor(Math.random() * 30) + 15,
-          heart_rate_average: Math.floor(Math.random() * 15) + 50,
-          source: 'apple_health'
-        }]);
+      // Process and insert steps data
+      for (const sample of stepsData) {
+        await supabase
+          .from('health_data')
+          .insert([{
+            user_id: user.id,
+            data_type: 'steps',
+            value: sample.value,
+            unit: 'count',
+            recorded_at: sample.date,
+            source: 'healthkit'
+          }]);
+      }
 
-      // Simulate activity data
-      const activityEnd = new Date();
-      const activityStart = new Date(activityEnd.getTime() - (45 * 60 * 1000));
-      
-      await supabase
-        .from('activity_data')
-        .insert([{
-          user_id: user.id,
-          activity_type: 'walking',
-          start_time: activityStart.toISOString(),
-          end_time: activityEnd.toISOString(),
-          duration_minutes: 45,
-          steps: Math.floor(Math.random() * 2000) + 3000,
-          distance_meters: Math.floor(Math.random() * 1000) + 2000,
-          calories_burned: Math.floor(Math.random() * 200) + 150,
-          heart_rate_average: Math.floor(Math.random() * 40) + 120,
-          heart_rate_max: Math.floor(Math.random() * 20) + 160,
-          intensity_level: 'moderate',
-          source: 'apple_health'
-        }]);
+      // Process and insert sleep data
+      for (const sample of sleepData) {
+        await supabase
+          .from('sleep_data')
+          .insert([{
+            user_id: user.id,
+            sleep_start: sample.startDate,
+            sleep_end: sample.endDate,
+            duration_minutes: sample.value,
+            quality_score: 75, // Default quality score
+            source: 'healthkit'
+          }]);
+      }
+
+      // If real data is empty, use simulated data for demo
+      if (heartRateData.length === 0 && stepsData.length === 0) {
+        await simulateHealthData();
+      }
 
       await loadHealthData();
       setIsConnected(true);
       
+      // Send mood update to Apple Watch if available
+      if (appleWatch.isReachable) {
+        await appleWatch.sendMoodToWatch('positive');
+      }
+      
       toast({
-        title: "Sync Complete",
+        title: "Sincronização completa",
         description: "Dados de saúde sincronizados com sucesso!"
       });
     } catch (error) {
       console.error('Error syncing health data:', error);
       toast({
-        title: "Sync Error",
-        description: "Failed to sync health data. Please try again.",
+        title: "Erro na sincronização",
+        description: "Falha ao sincronizar dados de saúde. Tente novamente.",
         variant: "destructive"
       });
     } finally {
       setIsSyncing(false);
+    }
+  };
+
+  const simulateHealthData = async () => {
+    const mockHealthData = [
+      { data_type: 'steps', value: Math.floor(Math.random() * 5000) + 8000, unit: 'count' },
+      { data_type: 'distance', value: Math.random() * 3 + 5, unit: 'km' },
+      { data_type: 'calories', value: Math.floor(Math.random() * 500) + 1800, unit: 'kcal' },
+      { data_type: 'heart_rate', value: Math.floor(Math.random() * 30) + 60, unit: 'bpm' },
+      { data_type: 'weight', value: Math.random() * 20 + 70, unit: 'kg' }
+    ];
+
+    const recordedAt = new Date();
+
+    // Insert simulated health data
+    for (const data of mockHealthData) {
+      await supabase
+        .from('health_data')
+        .insert([{
+          user_id: user.id,
+          data_type: data.data_type,
+          value: data.value,
+          unit: data.unit,
+          recorded_at: recordedAt.toISOString(),
+          source: 'simulated'
+        }]);
+    }
+  };
+
+  const handleWatchBreathingExercise = async () => {
+    const success = await appleWatch.showBreathingReminder(60);
+    if (success) {
+      toast({
+        title: "Exercício iniciado",
+        description: "Exercício de respiração ativado no Apple Watch"
+      });
     }
   };
 
@@ -181,27 +225,62 @@ const HealthDataSync: React.FC = () => {
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Badge variant={isConnected ? "default" : "secondary"}>
-                  {isConnected ? "Connected" : "Not Connected"}
+                  {isConnected ? "Conectado" : "Não conectado"}
                 </Badge>
+                {healthKit.isAvailable && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Smartphone className="h-3 w-3" />
+                    HealthKit
+                  </Badge>
+                )}
+                {appleWatch.isInstalled && (
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Watch className="h-3 w-3" />
+                    Apple Watch
+                  </Badge>
+                )}
                 {metrics && (
                   <span className="text-sm text-muted-foreground">
-                    Last sync: {metrics.lastSync.toLocaleDateString()}
+                    Última sync: {metrics.lastSync.toLocaleDateString()}
                   </span>
                 )}
               </div>
-              <Button 
-                onClick={simulateHealthSync}
-                disabled={isSyncing}
-                variant={isConnected ? "outline" : "default"}
-              >
-                {isSyncing ? "Syncing..." : isConnected ? "Sync Now" : "Connect to Apple Health"}
-              </Button>
+              <div className="flex gap-2">
+                <Button 
+                  onClick={handleHealthKitSync}
+                  disabled={isSyncing || healthKit.loading}
+                  variant={isConnected ? "outline" : "default"}
+                  size="sm"
+                >
+                  {isSyncing || healthKit.loading ? "Sincronizando..." : 
+                   healthKit.isAuthorized ? "Sincronizar" : "Conectar HealthKit"}
+                </Button>
+                {appleWatch.isReachable && (
+                  <Button 
+                    onClick={handleWatchBreathingExercise}
+                    variant="outline"
+                    size="sm"
+                  >
+                    Respiração
+                  </Button>
+                )}
+              </div>
             </div>
             
-            {isSyncing && (
+            {(isSyncing || healthKit.loading) && (
               <div className="space-y-2">
-                <div className="text-sm text-muted-foreground">Syncing health data...</div>
+                <div className="text-sm text-muted-foreground">
+                  {healthKit.isAvailable ? "Sincronizando com HealthKit..." : "Sincronizando dados de saúde..."}
+                </div>
                 <Progress value={75} className="w-full" />
+              </div>
+            )}
+
+            {healthKit.isAvailable && !healthKit.isAuthorized && (
+              <div className="p-3 bg-muted rounded-lg">
+                <p className="text-sm text-muted-foreground">
+                  Para sincronizar dados reais do iPhone, autorize o acesso ao HealthKit.
+                </p>
               </div>
             )}
           </div>
