@@ -75,43 +75,43 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-gradient-bg">
       {/* Header with User Menu */}
-      <header className="absolute top-0 right-0 z-10 p-6">
+      <header className="absolute top-0 right-0 z-10 p-6 animate-fade-in">
         <UserMenu />
       </header>
 
       {/* Hero Section */}
-      <section className="relative overflow-hidden">
+      <section className="relative overflow-hidden bg-gradient-hero animate-fade-in">
         <div className="absolute inset-0">
           <img 
             src={heroImage} 
             alt="Mental Health Technology" 
-            className="w-full h-full object-cover opacity-20"
+            className="w-full h-full object-cover opacity-30 transition-opacity duration-1000"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background via-background/90 to-background/40" />
         </div>
         
-        <div className="relative container mx-auto px-4 py-24">
+        <div className="relative container mx-auto px-4 py-32">
           <div className="max-w-4xl">
-            <div className="flex items-center gap-2 mb-6">
-              <Sparkles className="h-6 w-6 text-health-primary" />
+            <div className="flex items-center gap-2 mb-6 animate-slide-down">
+              <Sparkles className="h-6 w-6 text-health-primary animate-glow" />
               <span className="text-health-primary font-semibold">Mind Balance Insights</span>
             </div>
             
-            <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-primary">
-              Saúde Mental
+            <h1 className="text-5xl md:text-7xl font-bold mb-6 font-heading animate-slide-up">
+              <span className="text-gradient">Saúde Mental</span>
               <br />
               <span className="text-foreground">Inteligente</span>
             </h1>
             
-            <p className="text-xl text-muted-foreground mb-8 max-w-2xl leading-relaxed">
+            <p className="text-xl text-muted-foreground mb-8 max-w-2xl leading-relaxed animate-slide-up [animation-delay:0.2s]">
               Plataforma avançada que combina análise de voz, dados biométricos e inteligência artificial 
               para fornecer insights precisos sobre seu bem-estar mental em tempo real.
             </p>
             
-            <div className="flex flex-col sm:flex-row gap-4 mb-12">
+            <div className="flex flex-col sm:flex-row gap-4 mb-12 animate-slide-up [animation-delay:0.4s]">
               <Button 
                 size="lg" 
-                className="bg-gradient-primary hover:shadow-glow transition-all duration-300"
+                className="bg-gradient-primary btn-glow hover-lift font-medium"
                 onClick={() => {
                   setActiveTab('voice');
                   setAutoStartVoice(true);
@@ -123,7 +123,7 @@ const Index = () => {
               <Button 
                 size="lg" 
                 variant="outline" 
-                className="border-health-primary/50 hover:bg-health-primary/10"
+                className="glass-card hover-lift border-health-primary/50"
                 onClick={() => setActiveTab('dashboard')}
               >
                 Ver Dashboard
@@ -131,14 +131,18 @@ const Index = () => {
             </div>
             
             {/* Stats */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 animate-slide-up [animation-delay:0.6s]">
               {stats.map((stat, index) => (
-                <div key={index} className="flex items-center gap-3 p-4 bg-card/50 rounded-lg border border-health-primary/20">
-                  <div className="p-2 bg-health-primary/10 rounded-full">
+                <div 
+                  key={index} 
+                  className="flex items-center gap-3 p-4 glass-card rounded-lg border border-health-primary/20 hover-lift group"
+                  style={{ animationDelay: `${0.8 + index * 0.1}s` }}
+                >
+                  <div className="p-2 bg-health-primary/10 rounded-full group-hover:bg-health-primary/20 transition-colors">
                     {stat.icon}
                   </div>
                   <div>
-                    <div className="text-2xl font-bold text-health-primary">{stat.value}</div>
+                    <div className="text-2xl font-bold text-health-primary font-heading">{stat.value}</div>
                     <div className="text-sm text-muted-foreground">{stat.label}</div>
                   </div>
                 </div>
@@ -150,8 +154,8 @@ const Index = () => {
 
       {/* Features Overview */}
       <section className="py-20 container mx-auto px-4">
-        <div className="text-center mb-16">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">
+        <div className="text-center mb-16 animate-fade-in">
+          <h2 className="text-3xl md:text-4xl font-bold mb-4 font-heading">
             Tecnologia de Ponta para Saúde Mental
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
@@ -161,12 +165,16 @@ const Index = () => {
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((feature, index) => (
-            <Card key={index} className="bg-gradient-to-br from-card to-secondary/30 border-health-primary/20 hover:shadow-soft transition-all duration-300 group">
+            <Card 
+              key={index} 
+              className="glass-card border-health-primary/20 hover-lift smooth-transition group animate-slide-up shadow-soft"
+              style={{ animationDelay: `${index * 0.1}s` }}
+            >
               <CardHeader>
-                <div className="p-3 bg-health-primary/10 rounded-full w-fit group-hover:bg-health-primary/20 transition-colors">
+                <div className="p-3 bg-health-primary/10 rounded-full w-fit group-hover:bg-health-primary/20 group-hover:animate-glow transition-all">
                   {feature.icon}
                 </div>
-                <CardTitle className="text-lg">{feature.title}</CardTitle>
+                <CardTitle className="text-lg font-heading">{feature.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <CardDescription className="text-base leading-relaxed">
@@ -181,65 +189,65 @@ const Index = () => {
       {/* Main Application */}
       <section className="py-20 container mx-auto px-4">
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 max-w-7xl mx-auto mb-12 bg-secondary/50">{/* Mobile: 3 cols, Desktop: 7 cols */}
-            <TabsTrigger value="dashboard" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+          <TabsList className="grid w-full grid-cols-3 md:grid-cols-7 max-w-7xl mx-auto mb-12 glass-card p-2 h-auto animate-fade-in">{/* Mobile: 3 cols, Desktop: 7 cols */}
+            <TabsTrigger value="dashboard" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <Activity className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Dashboard</span>
             </TabsTrigger>
-            <TabsTrigger value="predictions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="predictions" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <Brain className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">IA Preditiva</span>
             </TabsTrigger>
-            <TabsTrigger value="therapy" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="therapy" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <Sparkles className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Terapia IA</span>
             </TabsTrigger>
-            <TabsTrigger value="recommendations" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="recommendations" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <Target className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Recomendações</span>
             </TabsTrigger>
-            <TabsTrigger value="voice" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="voice" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <Mic className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Análise de Voz</span>
             </TabsTrigger>
-            <TabsTrigger value="location" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="location" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <MapPin className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Localização</span>
             </TabsTrigger>
-            <TabsTrigger value="health" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm">
+            <TabsTrigger value="health" className="flex items-center gap-1 md:gap-2 text-xs md:text-sm smooth-transition hover-lift">
               <Heart className="h-3 w-3 md:h-4 md:w-4" />
               <span className="hidden sm:inline">Saúde</span>
             </TabsTrigger>
           </TabsList>
           
-          <TabsContent value="dashboard" className="mt-8">
+          <TabsContent value="dashboard" className="mt-8 animate-fade-in">
             <Dashboard />
           </TabsContent>
           
-          <TabsContent value="predictions" className="mt-8">
+          <TabsContent value="predictions" className="mt-8 animate-fade-in">
             <PredictiveDashboard />
           </TabsContent>
           
-          <TabsContent value="therapy" className="mt-8">
+          <TabsContent value="therapy" className="mt-8 animate-fade-in">
             <AITherapyChat />
           </TabsContent>
           
-          <TabsContent value="recommendations" className="mt-8">
+          <TabsContent value="recommendations" className="mt-8 animate-fade-in">
             <PersonalizedRecommendations />
           </TabsContent>
           
-           <TabsContent value="voice" className="mt-8">
+           <TabsContent value="voice" className="mt-8 animate-fade-in">
             <VoiceAnalyzer autoStart={autoStartVoice} onAutoStartComplete={() => setAutoStartVoice(false)} />
           </TabsContent>
           
-          <TabsContent value="location" className="mt-8">
+          <TabsContent value="location" className="mt-8 animate-fade-in">
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
               <LocationManager />
               <LocationMoodTracker />
             </div>
           </TabsContent>
           
-          <TabsContent value="health" className="mt-8">
+          <TabsContent value="health" className="mt-8 animate-fade-in">
             <HealthDataSync />
           </TabsContent>
         </Tabs>
