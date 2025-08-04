@@ -145,9 +145,30 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
 
       if (error) {
         console.error('Supabase function error:', error);
-        throw new Error(`Erro na análise: ${error.message}`);
+        console.error('Error details:', {
+          message: error.message,
+          status: error.status,
+          statusText: error.statusText,
+          context: error.context
+        });
+        
+        // Handle specific error types
+        if (error.message?.includes('não foi possível processar')) {
+          throw new Error('Formato de áudio não suportado. Tente gravar novamente.');
+        } else if (error.message?.includes('muito grande')) {
+          throw new Error('Arquivo muito grande. Tente uma gravação mais curta.');
+        } else if (error.message?.includes('vazio')) {
+          throw new Error('Gravação vazia. Tente gravar novamente.');
+        } else {
+          throw new Error(`Erro na análise: ${error.message}`);
+        }
       }
+      
       console.log('Resultado da análise recebido:', result);
+      
+      if (!result || typeof result !== 'object') {
+        throw new Error('Resposta inválida do servidor. Tente novamente.');
+      }
       
       if (!result.success) {
         const errorMsg = result.error || result.technical_error || 'Erro desconhecido na análise';

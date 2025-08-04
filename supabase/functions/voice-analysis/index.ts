@@ -18,9 +18,15 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Voice analysis function called');
+    console.log('=== Voice Analysis Function Started ===');
     console.log('Request method:', req.method);
+    console.log('Request URL:', req.url);
     console.log('Content-Type:', req.headers.get('content-type'));
+    console.log('All headers:', Object.fromEntries(req.headers.entries()));
+    
+    // Check for authorization header
+    const authHeader = req.headers.get('authorization');
+    console.log('Authorization header present:', !!authHeader);
     
     if (!openAIApiKey) {
       console.error('OpenAI API key not found');
@@ -38,18 +44,36 @@ serve(async (req) => {
 
     // Process FormData with better error handling
     let formData;
+    let rawBody;
+    
     try {
+      // First try to get the raw body for debugging
+      const bodyClone = req.clone();
+      const buffer = await bodyClone.arrayBuffer();
+      console.log('Raw body size:', buffer.byteLength);
+      
+      // Process FormData
       formData = await req.formData();
       console.log('FormData processed successfully');
       
+      // Validate FormData is not empty
+      if (!formData || formData.entries().next().done) {
+        throw new Error('FormData is empty');
+      }
+      
       // Log all form fields for debugging
       const formEntries = Array.from(formData.entries());
-      console.log('FormData entries:', formEntries.map(([key, value]) => ({
-        key,
-        type: typeof value,
-        isFile: value instanceof File,
-        size: value instanceof File ? value.size : value.toString().length
-      })));
+      console.log('FormData entries count:', formEntries.length);
+      formEntries.forEach(([key, value], index) => {
+        console.log(`Entry ${index}:`, {
+          key,
+          type: typeof value,
+          isFile: value instanceof File,
+          size: value instanceof File ? value.size : value.toString().length,
+          name: value instanceof File ? value.name : 'N/A',
+          mimeType: value instanceof File ? value.type : 'N/A'
+        });
+      });
       
     } catch (formError) {
       console.error('Error processing FormData:', formError);
@@ -58,34 +82,77 @@ serve(async (req) => {
         message: formError.message,
         stack: formError.stack
       });
-      throw new Error('Erro ao processar dados de áudio. Tente novamente.');
+      
+      return new Response(
+        JSON.stringify({ 
+          error: 'Erro ao processar dados de áudio. Verifique o formato do arquivo e tente novamente.',
+          details: formError.message 
+        }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
+    // Extract and validate form data
     const audioFile = formData.get('audio') as File;
     const userId = formData.get('user_id') as string;
     const sessionDuration = formData.get('session_duration') as string;
-
-    console.log('Dados recebidos:', { 
-      temArquivoAudio: !!audioFile,
-      tamanhoArquivo: audioFile?.size, 
-      tipoArquivo: audioFile?.type,
-      userId: userId ? 'presente' : 'ausente', 
-      sessionDuration 
+    
+    console.log('Extracted form data:', {
+      hasAudioFile: !!audioFile,
+      audioFileName: audioFile?.name,
+      audioFileSize: audioFile?.size,
+      audioFileType: audioFile?.type,
+      userId,
+      sessionDuration
     });
-
+    
+    // Validate required fields
     if (!audioFile) {
-      console.error('Arquivo de áudio não fornecido');
-      throw new Error('Arquivo de áudio é obrigatório');
+      console.error('No audio file found in FormData');
+      return new Response(
+        JSON.stringify({ error: 'Arquivo de áudio não encontrado na requisição.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
-
+    
     if (!userId) {
-      console.error('ID do usuário não fornecido');
-      throw new Error('Usuário não autenticado');
+      console.error('No user ID found in FormData');
+      return new Response(
+        JSON.stringify({ error: 'ID do usuário não fornecido.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    
+    if (audioFile.size === 0) {
+      console.error('Audio file is empty');
+      return new Response(
+        JSON.stringify({ error: 'Arquivo de áudio está vazio.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
+    }
+    
+    if (audioFile.size > 25 * 1024 * 1024) {
+      console.error('Audio file too large:', audioFile.size);
+      return new Response(
+        JSON.stringify({ error: 'Arquivo de áudio muito grande. Máximo 25MB.' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        }
+      );
     }
 
-    if (audioFile.size === 0) {
-      console.error('Arquivo de áudio vazio');
-      throw new Error('Arquivo de áudio vazio ou corrompido');
-    }
 
     // Create Supabase client
     const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
