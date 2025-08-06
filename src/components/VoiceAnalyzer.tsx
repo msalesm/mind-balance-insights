@@ -67,15 +67,6 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
   } = useAudioRecording();
 
   const analyzeVoice = async () => {
-    if (!user) {
-      toast({
-        title: 'Erro na análise',
-        description: 'Você precisa estar logado para usar esta funcionalidade.',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     if (!audioBlob) {
       toast({
         title: 'Erro na análise',
@@ -110,7 +101,7 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
       console.log('Starting voice analysis...', { 
         audioBlobSize: audioBlob.size, 
         audioBlobType: audioBlob.type,
-        userId: user.id,
+        userId: user?.id || 'anonymous',
         recordingTime,
         format: supportedFormat 
       });
@@ -124,14 +115,16 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
       const audioFile = new File([audioBlob], fileName, { type: mimeType });
       
       formData.append('audio', audioFile);
-      formData.append('user_id', user.id);
+      if (user?.id) {
+        formData.append('user_id', user.id);
+      }
       formData.append('session_duration', recordingTime.toString());
 
       console.log('FormData prepared:', {
         fileName,
         mimeType,
         fileSize: audioFile.size,
-        userId: user.id,
+        userId: user?.id || 'anonymous',
         sessionDuration: recordingTime
       });
 

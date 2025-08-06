@@ -21,8 +21,9 @@ serve(async (req) => {
     console.log('Request method:', req.method);
     console.log('Request URL:', req.url);
     console.log('Content-Type:', req.headers.get('content-type'));
+    console.log('User-Agent:', req.headers.get('user-agent'));
     
-    // Check for authorization header
+    // Check for authorization header (optional since JWT is disabled)
     const authHeader = req.headers.get('authorization');
     console.log('Authorization header present:', !!authHeader);
     
@@ -119,14 +120,10 @@ serve(async (req) => {
     }
     
     if (!userId) {
-      console.error('No user ID found in FormData');
-      return new Response(
-        JSON.stringify({ error: 'ID do usuário não fornecido.' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
+      console.warn('No user ID found in FormData - using anonymous user');
+      // For now, allow anonymous analysis for testing
+      const anonymousId = 'anonymous-' + Date.now();
+      console.log('Using anonymous ID:', anonymousId);
     }
     
     if (audioFile.size === 0) {
@@ -288,7 +285,7 @@ serve(async (req) => {
       .from('voice_analysis')
       .insert([
         {
-          user_id: userId,
+          user_id: userId || 'anonymous-' + Date.now(),
           transcription: transcription,
           emotional_tone: analysis.emotional_tone,
           stress_indicators: analysis.stress_indicators,
