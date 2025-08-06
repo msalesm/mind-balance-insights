@@ -46,7 +46,7 @@
 	
 	<!-- Privacy Permissions -->
 	<key>NSMicrophoneUsageDescription</key>
-	<string>Este app usa o microfone para análise de voz e avaliação de bem-estar mental através de inteligência artificial</string>
+	<string>Este app precisa acessar o microfone para análise de voz em tempo real. Seus dados de áudio são processados localmente e protegidos por criptografia avançada para garantir sua privacidade.</string>
 	
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Este app usa sua localização para fornecer insights contextuais de bem-estar baseados no ambiente</string>
