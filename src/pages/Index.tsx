@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -28,7 +28,7 @@ import heroImage from '@/assets/hero-mental-health.jpg';
 const Index = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [autoStartVoice, setAutoStartVoice] = useState(false);
-
+  const voiceSectionRef = useRef<HTMLDivElement | null>(null);
   // Check for URL parameters to handle auto-navigation
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
@@ -42,6 +42,13 @@ const Index = () => {
       }
     }
   }, []);
+
+  // Smooth scroll to Voice Analysis when the tab becomes active
+  useEffect(() => {
+    if (activeTab === 'voice' && voiceSectionRef.current) {
+      voiceSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [activeTab]);
 
   const features = [
     {
@@ -236,7 +243,7 @@ const Index = () => {
             <PersonalizedRecommendations />
           </TabsContent>
           
-           <TabsContent value="voice" className="mt-8 animate-fade-in">
+           <TabsContent ref={voiceSectionRef} value="voice" id="voice-section" className="mt-8 animate-fade-in scroll-mt-24">
             <VoiceAnalyzer autoStart={autoStartVoice} onAutoStartComplete={() => setAutoStartVoice(false)} />
           </TabsContent>
           
