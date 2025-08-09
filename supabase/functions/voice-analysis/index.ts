@@ -11,6 +11,30 @@ const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
 const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
+// Process base64 in chunks to prevent memory issues
+function processBase64Chunks(base64String: string, chunkSize = 32768) {
+  const chunks: Uint8Array[] = [];
+  let position = 0;
+  while (position < base64String.length) {
+    const chunk = base64String.slice(position, position + chunkSize);
+    const binaryChunk = atob(chunk);
+    const bytes = new Uint8Array(binaryChunk.length);
+    for (let i = 0; i < binaryChunk.length; i++) {
+      bytes[i] = binaryChunk.charCodeAt(i);
+    }
+    chunks.push(bytes);
+    position += chunkSize;
+  }
+  const totalLength = chunks.reduce((acc, chunk) => acc + chunk.length, 0);
+  const result = new Uint8Array(totalLength);
+  let offset = 0;
+  for (const chunk of chunks) {
+    result.set(chunk, offset);
+    offset += chunk.length;
+  }
+  return result;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -36,73 +60,98 @@ serve(async (req) => {
     const contentType = req.headers.get('content-type') || '';
     console.log('Content-Type header:', contentType);
 
-    if (!contentType.includes('multipart/form-data')) {
-      console.error('Invalid content type. Expected multipart/form-data, got:', contentType);
-      throw new Error('Content-Type deve ser multipart/form-data');
+    // Parse request based on Content-Type
+    let audioFile: File | null = null;
+    let userId: string | null = null;
+    let sessionDuration: string = '0';
+
+    if (contentType.includes('multipart/form-data')) {
+      // Process FormData with better error handling
+      let formData;
+      try {
+        const bodyClone = req.clone();
+        const buffer = await bodyClone.arrayBuffer();
+        console.log('Raw body size:', buffer.byteLength);
+        formData = await req.formData();
+        console.log('FormData processed successfully');
+        if (!formData || formData.entries().next().done) {
+          throw new Error('FormData is empty');
+        }
+        const formEntries = Array.from(formData.entries());
+        console.log('FormData entries count:', formEntries.length);
+        formEntries.forEach(([key, value], index) => {
+          console.log(`Entry ${index}:`, {
+            key,
+            type: typeof value,
+            isFile: value instanceof File,
+            size: value instanceof File ? value.size : value.toString().length,
+            name: value instanceof File ? value.name : 'N/A',
+            mimeType: value instanceof File ? value.type : 'N/A'
+          });
+        });
+      } catch (formError) {
+        console.error('Error processing FormData:', formError);
+        console.error('FormData error details:', {
+          name: (formError as any).name,
+          message: (formError as any).message,
+          stack: (formError as any).stack
+        });
+        return new Response(
+          JSON.stringify({ 
+            error: 'Erro ao processar dados de áudio. Verifique o formato do arquivo e tente novamente.',
+            details: (formError as any).message 
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
+      audioFile = formData.get('audio') as File | null;
+      userId = (formData.get('user_id') as string) || null;
+      sessionDuration = (formData.get('session_duration') as string) || '0';
+    } else if (contentType.includes('application/json')) {
+      try {
+        const json = await req.json();
+        const base64 = json.audio || json.audio_base64;
+        if (!base64) throw new Error('Campo "audio" em base64 não encontrado');
+        const bytes = processBase64Chunks(base64);
+        const blob = new Blob([bytes], { type: json.mimeType || 'audio/webm' });
+        audioFile = new File([blob], json.fileName || 'audio.webm', { type: blob.type });
+        userId = json.user_id || null;
+        sessionDuration = String(json.session_duration || '0');
+      } catch (jsonError) {
+        console.error('Erro ao processar JSON:', jsonError);
+        return new Response(
+          JSON.stringify({ error: 'JSON inválido para análise de voz', details: (jsonError as any).message }),
+          { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+      }
+    } else {
+      console.error('Invalid content type. Expected multipart/form-data or application/json, got:', contentType);
+      return new Response(
+        JSON.stringify({ error: 'Content-Type inválido. Use multipart/form-data ou application/json.' }),
+        { status: 415, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
     }
 
-    // Process FormData with better error handling
-    let formData;
-    
-    try {
-      // First try to get the raw body for debugging
-      const bodyClone = req.clone();
-      const buffer = await bodyClone.arrayBuffer();
-      console.log('Raw body size:', buffer.byteLength);
-      
-      // Process FormData
-      formData = await req.formData();
-      console.log('FormData processed successfully');
-      
-      // Validate FormData is not empty
-      if (!formData || formData.entries().next().done) {
-        throw new Error('FormData is empty');
-      }
-      
-      // Log all form fields for debugging
-      const formEntries = Array.from(formData.entries());
-      console.log('FormData entries count:', formEntries.length);
-      formEntries.forEach(([key, value], index) => {
-        console.log(`Entry ${index}:`, {
-          key,
-          type: typeof value,
-          isFile: value instanceof File,
-          size: value instanceof File ? value.size : value.toString().length,
-          name: value instanceof File ? value.name : 'N/A',
-          mimeType: value instanceof File ? value.type : 'N/A'
-        });
-      });
-      
-    } catch (formError) {
-      console.error('Error processing FormData:', formError);
-      console.error('FormData error details:', {
-        name: formError.name,
-        message: formError.message,
-        stack: formError.stack
-      });
-      
+    // Validate required fields
+    if (!audioFile) {
+      console.error('No audio file provided');
       return new Response(
-        JSON.stringify({ 
-          error: 'Erro ao processar dados de áudio. Verifique o formato do arquivo e tente novamente.',
-          details: formError.message 
-        }),
+        JSON.stringify({ error: 'Arquivo de áudio não encontrado na requisição.' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         }
       );
     }
-    
-    // Extract and validate form data
-    const audioFile = formData.get('audio') as File;
-    const userId = formData.get('user_id') as string;
-    const sessionDuration = formData.get('session_duration') as string;
-    
-    console.log('Extracted form data:', {
+
+    console.log('Extracted input:', {
       hasAudioFile: !!audioFile,
-      audioFileName: audioFile?.name,
-      audioFileSize: audioFile?.size,
-      audioFileType: audioFile?.type,
+      audioFileName: (audioFile as File)?.name,
+      audioFileSize: (audioFile as File)?.size,
+      audioFileType: (audioFile as File)?.type,
       userId,
       sessionDuration
     });
@@ -285,7 +334,7 @@ serve(async (req) => {
       .from('voice_analysis')
       .insert([
         {
-          user_id: userId || 'anonymous-' + Date.now(),
+          user_id: userId ?? null,
           transcription: transcription,
           emotional_tone: analysis.emotional_tone,
           stress_indicators: analysis.stress_indicators,

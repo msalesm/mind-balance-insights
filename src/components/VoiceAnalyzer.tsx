@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
-import { supabase } from '@/integrations/supabase/client';
+import { VOICE_ANALYSIS_URL } from '@/lib/constants';
 import { translateVoiceMetric, translateEmotion, translate } from '@/lib/translations';
 import { 
   Mic, 
@@ -130,32 +130,24 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
 
       console.log('Sending request to voice analysis function...');
 
-      const { data: result, error } = await supabase.functions.invoke('voice-analysis', {
+      const response = await fetch(VOICE_ANALYSIS_URL, {
+        method: 'POST',
         body: formData,
       });
 
-      console.log('Supabase function response:', { result, error });
-
-      if (error) {
-        console.error('Supabase function error:', error);
-        console.error('Error details:', {
-          message: error.message,
-          status: error.status,
-          statusText: error.statusText,
-          context: error.context
-        });
-        
-        // Handle specific error types
-        if (error.message?.includes('não foi possível processar')) {
-          throw new Error('Formato de áudio não suportado. Tente gravar novamente.');
-        } else if (error.message?.includes('muito grande')) {
-          throw new Error('Arquivo muito grande. Tente uma gravação mais curta.');
-        } else if (error.message?.includes('vazio')) {
-          throw new Error('Gravação vazia. Tente gravar novamente.');
-        } else {
-          throw new Error(`Erro na análise: ${error.message}`);
+      if (!response.ok) {
+        let message = `Erro na análise: ${response.status} ${response.statusText}`;
+        try {
+          const errJson = await response.json();
+          message = errJson.error || errJson.details || errJson.message || message;
+        } catch {
+          const errText = await response.text();
+          if (errText) message = errText;
         }
+        throw new Error(message);
       }
+
+      const result = await response.json();
       
       console.log('Resultado da análise recebido:', result);
       
