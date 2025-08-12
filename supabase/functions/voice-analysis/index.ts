@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const openAIApiKey = Deno.env.get('OPENAI_API_KEY');
 const supabaseUrl = Deno.env.get('SUPABASE_URL');
-const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
 // Process base64 in chunks to prevent memory issues
 function processBase64Chunks(base64String: string, chunkSize = 32768) {
@@ -47,15 +47,25 @@ serve(async (req) => {
     console.log('Content-Type:', req.headers.get('content-type'));
     console.log('User-Agent:', req.headers.get('user-agent'));
     
-    // Check for authorization header (optional since JWT is disabled)
+    // Enforce authentication via JWT and set up RLS-aware Supabase client
     const authHeader = req.headers.get('authorization');
-    console.log('Authorization header present:', !!authHeader);
-    
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: 'Usuário não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
+    const token = authHeader.replace('Bearer ', '');
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error('Supabase URL or ANON key not configured');
+      throw new Error('Supabase config missing');
+    }
     if (!openAIApiKey) {
       console.error('OpenAI API key not found');
       throw new Error('OpenAI API key not configured');
     }
-
+    const supabase = createClient(supabaseUrl, supabaseAnonKey, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+    if (authError || !user) {
+      return new Response(JSON.stringify({ error: 'Usuário não autenticado' }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     // Get raw request body first for debugging
     const contentType = req.headers.get('content-type') || '';
     console.log('Content-Type header:', contentType);
@@ -108,7 +118,6 @@ serve(async (req) => {
         );
       }
       audioFile = formData.get('audio') as File | null;
-      userId = (formData.get('user_id') as string) || null;
       sessionDuration = (formData.get('session_duration') as string) || '0';
     } else if (contentType.includes('application/json')) {
       try {
@@ -118,7 +127,6 @@ serve(async (req) => {
         const bytes = processBase64Chunks(base64);
         const blob = new Blob([bytes], { type: json.mimeType || 'audio/webm' });
         audioFile = new File([blob], json.fileName || 'audio.webm', { type: blob.type });
-        userId = json.user_id || null;
         sessionDuration = String(json.session_duration || '0');
       } catch (jsonError) {
         console.error('Erro ao processar JSON:', jsonError);
@@ -168,13 +176,6 @@ serve(async (req) => {
       );
     }
     
-    if (!userId) {
-      console.warn('No user ID found in FormData - using anonymous user');
-      // For now, allow anonymous analysis for testing
-      const anonymousId = 'anonymous-' + Date.now();
-      console.log('Using anonymous ID:', anonymousId);
-    }
-    
     if (audioFile.size === 0) {
       console.error('Audio file is empty');
       return new Response(
@@ -197,8 +198,7 @@ serve(async (req) => {
       );
     }
 
-    // Create Supabase client
-    const supabase = createClient(supabaseUrl!, supabaseServiceKey!);
+    // Supabase client already initialized with RLS via Authorization header above
 
     // Prepare form data for OpenAI Whisper
     const whisperFormData = new FormData();
@@ -243,7 +243,7 @@ serve(async (req) => {
     const transcriptionResult = await transcriptionResponse.json();
     const transcription = transcriptionResult.text;
 
-    console.log('Transcrição concluída:', transcription.substring(0, 100) + '...');
+    console.log('Transcrição concluída (length):', transcription?.length ?? 0);
 
     if (!transcription || transcription.trim().length === 0) {
       console.error('Transcrição vazia recebida');
@@ -291,15 +291,12 @@ serve(async (req) => {
     
     try {
       const content = sentimentResult.choices[0].message.content;
-      console.log('Raw AI response:', content);
-      
-      // Remove any markdown code blocks and clean the content
+      // Redact model response in logs
       const cleanContent = content.replace(/```json\n?|\n?```/g, '').trim();
       analysis = JSON.parse(cleanContent);
       console.log('Análise concluída com sucesso');
     } catch (parseError) {
       console.error('Erro ao processar análise JSON:', parseError);
-      console.error('Content was:', sentimentResult.choices[0].message.content);
       // Fallback analysis if JSON parsing fails
       analysis = {
         emotional_tone: { 
@@ -334,7 +331,7 @@ serve(async (req) => {
       .from('voice_analysis')
       .insert([
         {
-          user_id: userId ?? null,
+          user_id: user.id,
           transcription: transcription,
           emotional_tone: analysis.emotional_tone,
           stress_indicators: analysis.stress_indicators,

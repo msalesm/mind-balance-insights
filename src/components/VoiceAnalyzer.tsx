@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from '@/components/ui/use-toast';
 import { useAudioRecording } from '@/hooks/useAudioRecording';
-import { VOICE_ANALYSIS_URL } from '@/lib/constants';
+import { supabase } from '@/integrations/supabase/client';
 import { translateVoiceMetric, translateEmotion, translate } from '@/lib/translations';
 import { 
   Mic, 
@@ -106,48 +106,38 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
         format: supportedFormat 
       });
 
-      // Create FormData with proper headers
-      const formData = new FormData();
+      // Convert audio to base64 and call edge function securely
+      const blobToBase64 = (blob: Blob) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          const dataUrl = reader.result as string;
+          const base64 = dataUrl.split(',')[1] || '';
+          resolve(base64);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(blob);
+      });
+
       const fileName = `voice-sample.${supportedFormat?.extension || 'webm'}`;
-      
-      // Ensure proper mime type
       const mimeType = supportedFormat?.mimeType.split(';')[0] || 'audio/webm';
-      const audioFile = new File([audioBlob], fileName, { type: mimeType });
-      
-      formData.append('audio', audioFile);
-      if (user?.id) {
-        formData.append('user_id', user.id);
-      }
-      formData.append('session_duration', recordingTime.toString());
+      const base64 = await blobToBase64(audioBlob);
 
-      console.log('FormData prepared:', {
-        fileName,
-        mimeType,
-        fileSize: audioFile.size,
-        userId: user?.id || 'anonymous',
-        sessionDuration: recordingTime
+      console.log('Sending request to voice analysis function (JSON)...');
+
+      const { data, error } = await supabase.functions.invoke('voice-analysis', {
+        body: {
+          audio: base64,
+          mimeType,
+          fileName,
+          session_duration: recordingTime,
+        },
       });
 
-      console.log('Sending request to voice analysis function...');
-
-      const response = await fetch(VOICE_ANALYSIS_URL, {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        let message = `Erro na análise: ${response.status} ${response.statusText}`;
-        try {
-          const errJson = await response.json();
-          message = errJson.error || errJson.details || errJson.message || message;
-        } catch {
-          const errText = await response.text();
-          if (errText) message = errText;
-        }
-        throw new Error(message);
+      if (error) {
+        throw new Error(error.message || 'Erro na análise');
       }
 
-      const result = await response.json();
+      const result = data;
       
       console.log('Resultado da análise recebido:', result);
       
