@@ -123,6 +123,13 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
       const base64 = await blobToBase64(audioBlob);
 
       console.log('Sending request to voice analysis function (JSON)...');
+      console.log('Request payload:', {
+        hasAudio: !!base64,
+        audioLength: base64?.length || 0,
+        mimeType,
+        fileName,
+        session_duration: recordingTime,
+      });
 
       const { data, error } = await supabase.functions.invoke('voice-analysis', {
         body: {
@@ -133,7 +140,10 @@ export const VoiceAnalyzer = ({ autoStart, onAutoStartComplete }: VoiceAnalyzerP
         },
       });
 
+      console.log('Function response:', { data, error });
+
       if (error) {
+        console.error('Supabase function error:', error);
         throw new Error(error.message || 'Erro na análise');
       }
 
