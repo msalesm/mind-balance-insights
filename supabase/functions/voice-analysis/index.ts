@@ -122,12 +122,22 @@ serve(async (req) => {
     } else if (contentType.includes('application/json')) {
       try {
         const json = await req.json();
-        const base64 = json.audio || json.audio_base64;
-        if (!base64) throw new Error('Campo "audio" em base64 não encontrado');
+        console.log('JSON body received:', Object.keys(json));
+        const base64 = json.audio;
+        if (!base64) {
+          console.error('No audio field in JSON');
+          throw new Error('Campo "audio" em base64 não encontrado');
+        }
+        console.log('Processing base64 audio, length:', base64.length);
         const bytes = processBase64Chunks(base64);
         const blob = new Blob([bytes], { type: json.mimeType || 'audio/webm' });
         audioFile = new File([blob], json.fileName || 'audio.webm', { type: blob.type });
         sessionDuration = String(json.session_duration || '0');
+        console.log('Successfully created audio file from JSON:', { 
+          size: audioFile.size, 
+          type: audioFile.type, 
+          name: audioFile.name 
+        });
       } catch (jsonError) {
         console.error('Erro ao processar JSON:', jsonError);
         return new Response(
@@ -163,18 +173,6 @@ serve(async (req) => {
       userId,
       sessionDuration
     });
-    
-    // Validate required fields
-    if (!audioFile) {
-      console.error('No audio file found in FormData');
-      return new Response(
-        JSON.stringify({ error: 'Arquivo de áudio não encontrado na requisição.' }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        }
-      );
-    }
     
     if (audioFile.size === 0) {
       console.error('Audio file is empty');
